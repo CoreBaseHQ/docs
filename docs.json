@@ -1,5 +1,6 @@
 {
   "name": "CoreBase Docs",
+  "theme": "mint",
   "anchors": [
     {
       "name": "Platform",
