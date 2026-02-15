@@ -1,28 +1,56 @@
 {
-  "name": "CoreBase Docs",
+  "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "anchors": [
-    {
-      "name": "Platform",
-      "icon": "building",
-      "url": "platform/intro"
-    },
-    {
-      "name": "CoreMCP",
-      "icon": "code",
-      "url": "coremcp/installation"
+  "name": "CoreBase",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Platform",
+          "href": "https://docs.corebasehq.com/platform/intro",
+          "icon": "building"
+        },
+        {
+          "anchor": "CoreMCP",
+          "href": "https://docs.corebasehq.com/coremcp/intro",
+          "icon": "code"
+        },
+        {
+          "anchor": "Blog",
+          "href": "https://corebasehq.com/blog",
+          "icon": "newspaper"
+        }
+      ]
     }
-  ],
-  "navigation": [
-    {
-      "group": "Platform Guide",
-      "pages": ["platform/intro", "platform/billing"],
-      "anchor": "Platform" 
-    },
-    {
-      "group": "Technical Reference",
-      "pages": ["coremcp/installation", "coremcp/cli-reference"],
-      "anchor": "CoreMCP"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hi@corebasehq.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://dashboard.corebasehq.com"
     }
-  ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/corebase",
+      "github": "https://github.com/corebasehq",
+      "linkedin": "https://linkedin.com/company/corebasehq"
+    }
+  }
 }
