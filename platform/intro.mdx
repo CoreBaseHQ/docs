@@ -1,0 +1,62 @@
+---
+title: "Platform overview"
+description: "Tour of the CoreBase web panel."
+---
+
+The web panel at [app.corebasehq.com](https://app.corebasehq.com) is where you manage your organization, data sources, access policies, and billing.
+
+## Navigation
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="chart-line">
+    Live activity — queries per day, connected agents, top data sources, recent errors.
+  </Card>
+  <Card title="Chat" icon="messages">
+    Natural-language query interface. Powered by your data + Corporate Memory.
+  </Card>
+  <Card title="Sources" icon="database" href="/coremcp/connect">
+    Add and manage CoreMCP agents and the data sources they expose.
+  </Card>
+  <Card title="Schemas" icon="table">
+    Sync and inspect the schema snapshots your agents have shared.
+  </Card>
+  <Card title="Semantic Layer" icon="tags" href="/concepts/corporate-memory">
+    Pin business concepts to columns and review what Corporate Memory learned.
+  </Card>
+  <Card title="Access" icon="shield-check" href="/concepts/rbac">
+    Define who can query which data — by user attribute, table, or pattern.
+  </Card>
+  <Card title="Audit Log" icon="clipboard-list">
+    Every retrieval, with applied policies and timing. Pro / Team.
+  </Card>
+  <Card title="API Tokens" icon="key" href="/platform/tokens">
+    Issue `cb_live_` tokens for the Developer API. Business plan only.
+  </Card>
+  <Card title="Team" icon="users">
+    Invite members, manage roles, set user attributes.
+  </Card>
+  <Card title="Billing" icon="wallet" href="/platform/billing">
+    Plan, balance, top-ups, invoices.
+  </Card>
+</CardGroup>
+
+## Onboarding
+
+Brand-new organizations are walked through a 3-step setup the first time they sign in:
+
+1. **Connect a source** — Slack workspace or Microsoft 365 mail.
+2. **Set a starter policy** — pick a recipe (e.g. *lock #finance to admins*).
+3. **Done** — land on the dashboard.
+
+You can re-run any step from the corresponding page in the sidebar.
+
+## Roles
+
+CoreBase respects Clerk's organization roles:
+
+| Role | Capabilities |
+|---|---|
+| `org:admin` | Everything — billing, policies, agents, members |
+| `org:member` | Chat + view sources, scoped by access policies |
+
+Per-feature gating beyond the two roles is done with user attributes (see [Access policies](/concepts/rbac)).

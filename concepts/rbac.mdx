@@ -1,0 +1,77 @@
+---
+title: "Access policies (RBAC)"
+description: "Restrict who can query which data — by team, role, or column."
+---
+
+By default every member of an organization can query every connected data source. For most companies that's too open. CoreBase's access policy engine lets you scope reads to a specific user attribute, table, or column pattern — enforced server-side, before SQL hits your database.
+
+## The model
+
+A policy is a single rule:
+
+```yaml
+when: matches(source, container_pattern)
+then: access_level = X  # all | restricted | admin_only
+with: required_attrs    # e.g. dept=hr, branch=istanbul
+```
+
+| `access_level` | Who can query |
+|---|---|
+| `all` | Any member |
+| `restricted` | Members whose JWT attrs satisfy `required_attrs` |
+| `admin_only` | Org admins only |
+
+## Where attributes come from
+
+User attributes live in **Clerk organization membership → publicMetadata**. They're injected into the JWT by a template:
+
+```jsonc
+// Clerk → JWT Templates → "user_attrs"
+{
+  "user_attrs": "{{org_membership.public_metadata}}"
+}
+```
+
+Example membership metadata:
+
+```json
+{
+  "dept": "hr",
+  "branch": "istanbul",
+  "project": "compliance-2026"
+}
+```
+
+A user with `dept=hr` can only see tables and Slack channels covered by HR policies.
+
+## Common policies
+
+<CardGroup cols={2}>
+  <Card title="Lock #finance Slack to admins" icon="hashtag">
+    `source_type=slack_message, container=channel:C123, access_level=admin_only`
+  </Card>
+  <Card title="HR email by sender domain" icon="envelope">
+    `source_type=o365_email, container=sender_domain:hr.example.com, access_level=restricted, attrs={dept:hr}`
+  </Card>
+  <Card title="PII columns admin-only" icon="lock">
+    `source_type=mssql, container=column_pattern:.*_ssn$, access_level=admin_only`
+  </Card>
+  <Card title="Branch-scoped customer rows" icon="map-pin">
+    `source_type=postgres, container=table:customers, access_level=restricted, attrs={branch:user.branch}`
+  </Card>
+</CardGroup>
+
+## Audit
+
+Every retrieval emits a row to `audit_logs`. The columns capture the **state at query time** — so even if a policy changes later, you can still see what was enforced when:
+
+- `user_id`, `is_admin_at_query`, `user_attrs_snapshot`
+- `query_hash` (SHA-256 of the prompt; raw text is not stored), `query_length`
+- `retrieved_chunk_ids`, `retrieved_count`, `applied_policy_ids`
+- `chat_id`, `duration_ms`, `created_at`
+
+Filter by user, policy, or time range under **Security → Audit Log**.
+
+<Tip>
+  Defense-in-depth: a user with **no** `user_attrs` set is treated as having empty attrs — they only see `access_level=all` content. Missing attrs are not a bypass.
+</Tip>

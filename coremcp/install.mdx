@@ -1,0 +1,125 @@
+---
+title: "Install CoreMCP"
+description: "Get the agent running on Linux, Docker, or in an air-gapped environment."
+---
+
+CoreMCP ships as a single static Go binary. Pick the install path that matches your environment.
+
+## Binary release
+
+The fastest path — pre-built binaries for Linux, macOS, and Windows.
+
+<Steps>
+  <Step title="Download">
+    Grab the latest release for your platform from [github.com/corebasehq/coremcp/releases](https://github.com/corebasehq/coremcp/releases). Move the binary somewhere on your `$PATH`:
+
+    ```bash
+    sudo install -m 0755 coremcp-linux-amd64 /usr/local/bin/coremcp
+    coremcp version
+    ```
+  </Step>
+  <Step title="Configure">
+    Create `coremcp.yaml` next to where the binary will run (or pass `--config /path/to/coremcp.yaml`):
+
+    ```yaml
+    server:
+      name: "coremcp-agent"
+      version: "0.4.6"
+      transport: "stdio"   # stdio (Claude Desktop) | http (remote)
+      port: 8080           # only used in http mode
+
+    logging:
+      level: "info"        # debug | info | warn | error
+      format: "json"       # text | json
+
+    sources:
+      - name: "erp_prod"
+        type: "mssql"
+        dsn: "sqlserver://core_ro:password@10.0.0.5:1433?database=ERP&encrypt=disable"
+        readonly: true     # default — strongly recommended
+    ```
+
+    Use a database user with `SELECT`-only grants. `readonly: true` is the default; setting it `false` unlocks `execute_procedure`.
+  </Step>
+  <Step title="Run">
+    ```bash
+    coremcp --config ./coremcp.yaml
+    ```
+
+    Inside the panel's **Sources** page the agent appears as **Connected** within a few seconds.
+  </Step>
+</Steps>
+
+## From source
+
+```bash
+git clone https://github.com/corebasehq/coremcp.git
+cd coremcp
+go build -o coremcp ./cmd/coremcp
+```
+
+Requires Go 1.23+.
+
+## Docker
+
+A `docker-compose.yml` ships in the repo:
+
+```bash
+git clone https://github.com/corebasehq/coremcp.git
+cd coremcp
+# Edit coremcp.yaml with your DSN, then:
+docker compose up -d
+```
+
+Or build your own image with the included `Dockerfile`.
+
+## systemd (Linux daemon)
+
+Wrap the binary in a unit:
+
+```ini
+# /etc/systemd/system/coremcp.service
+[Unit]
+Description=CoreMCP agent
+After=network.target
+
+[Service]
+Type=simple
+User=coremcp
+ExecStart=/usr/local/bin/coremcp --config /etc/coremcp/coremcp.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now coremcp
+sudo journalctl -u coremcp -f
+```
+
+Restrict the config: `chown root:coremcp /etc/coremcp/coremcp.yaml && chmod 0640 /etc/coremcp/coremcp.yaml`.
+
+## Air-gapped
+
+For environments without internet, vendor everything:
+
+1. Build the binary on a machine with internet, copy it to the air-gapped host.
+2. Pre-pull the database drivers — CoreMCP embeds them, so the binary alone is enough.
+3. Ship your `coremcp.yaml` separately.
+
+For the full air-gapped CoreBase stack (panel + agent + LLM together, no outbound network), contact sales for the Enterprise Container bundle.
+
+## Verifying the install
+
+The panel's **Sources** page shows live status:
+
+- **Connected** — healthy
+- **Syncing schema** — initial discovery in progress (a few minutes for large databases)
+- **Disconnected** — agent stopped or network blocked outbound 443
+
+You can also test a database connection directly via the agent's logs (`logging.level: debug`).
+
+## Upgrading
+
+Re-download the binary from [releases](https://github.com/corebasehq/coremcp/releases) and replace the existing one. The wire protocol is versioned; a stale agent stays compatible with current CoreBase for at least 6 months.

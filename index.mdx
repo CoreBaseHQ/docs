@@ -1,97 +1,50 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "CoreBase"
+description: "The Corporate Memory Layer for Enterprise AI"
 ---
 
-## Setting up
+CoreBase turns the institutional knowledge locked inside your databases, APIs, Slack channels, and email into something your AI agents can talk to — **without moving the data anywhere**.
 
-Get your documentation site up and running in minutes.
+Connect your existing systems, set access policies, and let your team query a decade of operational context in natural language.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connect a data source and run your first query in 5 minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Developer API" icon="code" href="/api-reference/introduction">
+    Embed CoreBase in your own product with `cb_live_` tokens.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="CoreMCP" icon="server" href="/coremcp/intro">
+    Install the local tunnel engine that keeps raw data inside your network.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Billing" icon="wallet" href="/platform/billing">
+    Plans, credits, and usage-based pricing.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What makes CoreBase different
 
-Everything you need to create world-class documentation.
+<CardGroup cols={2}>
+  <Card title="Zero Raw Data Egress" icon="shield-check" href="/concepts/zero-raw-data-egress">
+    Raw rows never leave your network. CoreBase only sees hashed schema metadata over a secure WebSocket tunnel.
+  </Card>
+  <Card title="Corporate Memory" icon="brain" href="/concepts/corporate-memory">
+    Learns your business vocabulary — "active customer", "pending shipment" — from schema relationships and successful query history.
+  </Card>
+  <Card title="Legacy database support" icon="database">
+    MSSQL today (including SQL Server 2000 / 2008 with Turkish_CI_AS collation), Firebird in active development. We speak to the old guard.
+  </Card>
+  <Card title="Air-gap deployment" icon="lock">
+    Run CoreBase entirely inside your perimeter — Docker / Kubernetes, no outbound network required.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## How it works
 
-## Need inspiration?
+1. **Install CoreMCP** on your own server — a small Go binary that connects to your databases.
+2. **Connect to CoreBase** over an outbound-only WebSocket. We only see schema metadata.
+3. **Query in natural language** from the panel, embedded widget, or the Developer API.
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+<Card title="See the full security model" icon="shield" href="/concepts/zero-raw-data-egress" horizontal>
+  Read why raw rows physically cannot leave your network.
 </Card>

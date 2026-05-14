@@ -1,0 +1,99 @@
+---
+title: "Connect a data source"
+description: "Connection strings and per-driver options for the CoreMCP agent."
+---
+
+CoreMCP's agent config (`coremcp.yaml`) carries one or more *sources*. Each source is a database the agent will expose to CoreBase. Reload by restarting the agent (`systemctl restart coremcp` or stop/start the binary).
+
+## Supported drivers
+
+| Driver | Status |
+|---|---|
+| Microsoft SQL Server (2000+) | ✅ Stable |
+| Firebird | 🚧 Coming soon |
+| PostgreSQL | 🗺 On the roadmap |
+| MySQL / MariaDB | 🗺 On the roadmap |
+
+Need a driver that isn't listed? CoreMCP exposes an [adapter interface](https://github.com/corebasehq/coremcp/tree/main/pkg/adapters) — community PRs welcome.
+
+## Microsoft SQL Server
+
+```yaml
+sources:
+  - name: "erp_prod"
+    type: "mssql"
+    dsn: "sqlserver://core_ro:password@10.0.0.5:1433?database=ERP&encrypt=disable"
+    readonly: true
+```
+
+### Per-source options
+
+| Option | Default | Description |
+|---|---|---|
+| `readonly` | `true` | When true, only `SELECT` and metadata queries are allowed. Strongly recommended. |
+| `no_lock` | `false` | Runs all reads with `READ UNCOMMITTED` isolation (equivalent to `WITH (NOLOCK)`). Useful on busy OLTP databases — trade-off: may read uncommitted rows. |
+| `normalize_turkish` | `false` | Turkish character normalization for legacy Turkish ERP databases (Turkish_CI_AS collation). |
+
+### Legacy SQL Server (2000 / 2008)
+
+CoreMCP auto-detects the SQL Server version on connect and rewrites queries:
+
+- **SQL Server 2000:** uses `sysobjects` / `sysforeignkeys` instead of `sys.*` views
+- **SQL Server 2008 and older:** rewrites `OFFSET FETCH` to `SELECT TOP N`
+- **All versions:** rewrites `LIMIT N` to `SELECT TOP N` (T-SQL compatibility)
+
+So the same prompts that work on modern SQL Server work on a Sybase-era ERP without manual SQL tweaks.
+
+<Tip>
+  Use a dedicated **read-only login**: `CREATE LOGIN core_ro WITH PASSWORD = '...'; GRANT SELECT TO core_ro;`
+</Tip>
+
+## Multiple sources
+
+Add as many sources as you need under one agent:
+
+```yaml
+sources:
+  - name: "erp_prod"
+    type: "mssql"
+    dsn: "sqlserver://core_ro:...@10.0.0.5:1433?database=ERP&encrypt=disable"
+
+  - name: "warehouse"
+    type: "mssql"
+    dsn: "sqlserver://reader:...@10.0.0.6:1433?database=WH&encrypt=disable"
+    no_lock: true
+```
+
+Source names must be unique within an agent. To shard one logical database across tenants, run multiple agents — one per tenant.
+
+## Disabling a source
+
+Comment out the entry in `coremcp.yaml` and restart the agent. Existing chat sessions referencing the source return a "source unavailable" error gracefully.
+
+## Custom query tools
+
+CoreMCP lets you define reusable SQL queries as MCP tools your AI can call. Example:
+
+```yaml
+tools:
+  - name: "top_customers"
+    description: "Top customers by revenue this quarter"
+    source: "erp_prod"
+    sql: |
+      SELECT TOP 10
+        c.name,
+        SUM(o.total) AS revenue
+      FROM customers c
+      JOIN orders o ON o.customer_id = c.id
+      WHERE o.created_at >= DATEADD(quarter, -1, GETDATE())
+      GROUP BY c.name
+      ORDER BY revenue DESC
+```
+
+See [coremcp.example.yaml](https://github.com/corebasehq/coremcp/blob/main/coremcp.example.yaml) for the full schema.
+
+## Hardening
+
+- **Read-only credentials only.** Generated SQL is read-only by design and `readonly: true` is the default, but DB-level scoping is your second line of defense.
+- **Network ACLs.** Lock down which IPs can reach each database — CoreMCP is the only consumer that needs them.
+- **TLS to the database.** Set `encrypt=true` for production MSSQL DSNs; `encrypt=disable` is for local/dev only.

@@ -1,0 +1,112 @@
+---
+title: "Embeddable widget"
+description: "Drop CoreBase chat into your product with one script tag + one init call."
+---
+
+The CoreBase widget is a Preact-based chat UI that lives in a shadow-DOM-isolated container, talks to the FastAPI backend over a server-signed JWT, and weighs ~67KB gzipped. Designed for legacy CRM / ERP panels — PHP included.
+
+## How it works
+
+1. Your backend mints a short-lived JWT signed with the tenant's B2B secret.
+2. You load the widget script and call `window.CorebaseWidget.init(...)` with that JWT.
+3. The widget renders a floating launcher (or inline element) and forwards user queries to CoreBase with the JWT.
+4. Access policies on the CoreBase side restrict what each user can see.
+
+## Installation
+
+```html
+<script
+  src="https://unpkg.com/@corebasehq/widget/dist/corebase-widget.js"
+  defer
+></script>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    window.CorebaseWidget.init({
+      apiBaseUrl: "https://api.corebasehq.com",
+      publicId: "YOUR_TENANT_PUBLIC_ID",
+      authToken: "{{ server_generated_jwt }}",
+    });
+  });
+</script>
+```
+
+There is **no auto-mount** — `init()` must be called explicitly so you control when the widget appears and which token it gets.
+
+### npm
+
+```bash
+npm install @corebasehq/widget
+```
+
+```ts
+import "@corebasehq/widget";
+
+window.CorebaseWidget.init({
+  apiBaseUrl: "https://api.corebasehq.com",
+  publicId: "YOUR_TENANT_PUBLIC_ID",
+  authToken: jwt,
+});
+```
+
+## API
+
+```ts
+window.CorebaseWidget.init({
+  apiBaseUrl: string,       // CoreBase backend URL
+  publicId?: string,        // Tenant public ID (Settings → Widget)
+  authToken?: string,       // Static JWT
+  getAuthToken?: () => Promise<string> | string,  // Async fetcher for refresh
+  title?: string,           // Header text — default "CoreBase"
+  placeholder?: string,     // Input placeholder — default "Ask a question"
+  initialOpen?: boolean,    // Start expanded — default false
+  containerId?: string,     // Existing element ID to mount inside; omit for floating
+  chatId?: string,          // Resume a specific conversation
+  primaryColor?: string,    // Accent color, any CSS color — default #0b5fff
+  logoUrl?: string,         // Custom logo in header
+  zIndex?: number,          // Stacking order — default 2147483000
+});
+
+window.CorebaseWidget.destroy();  // Tear down and remove from DOM
+```
+
+Either `authToken` or `getAuthToken` is required. Use `getAuthToken` when your token needs to be refreshed periodically — the widget calls it before each request.
+
+## Generating the JWT (server side)
+
+Sign with your **B2B JWT secret** (panel → Settings → Widget → Rotate secret). The secret never reaches the browser.
+
+```php
+<?php
+use Firebase\JWT\JWT;
+
+$payload = [
+    'sub'        => $current_user->id,             // required — user identifier
+    'role'       => $current_user->isManager() ? 'admin' : 'member',
+    'user_attrs' => [                              // optional — RBAC attrs
+        'dept'   => $current_user->department,
+        'branch' => $current_user->branch,
+    ],
+    'exp' => time() + 60 * 30,                     // 30 min — refresh via getAuthToken
+];
+
+$jwt = JWT::encode($payload, $secret, 'HS256');
+?>
+```
+
+Required claim: **`sub`** (end-user ID, used in audit logs). The `role: "admin"` claim promotes to admin; otherwise the user is treated as a regular member. `user_attrs` feeds into [access policies](/concepts/rbac).
+
+The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
+
+## Security
+
+- **Shadow DOM isolation** — widget styles never leak into the host page and vice versa.
+- **DOMPurify sanitization** — markdown rendered from model output is sanitized against XSS before insertion.
+- **TLS 1.2+** for all traffic. Raw row data never crosses the wire — see [Zero Raw Data Egress](/concepts/zero-raw-data-egress).
+- **Short-lived JWTs** rejected by CoreBase once expired. Refresh client-side via `getAuthToken`.
+
+## Going live
+
+1. Test on staging with a separate `publicId`.
+2. Switch to your prod `publicId` once policies are configured.
+3. Monitor under **Dashboard → Widget** for query volume and errors.

@@ -1,0 +1,67 @@
+---
+title: "API tokens"
+description: "Issue `cb_live_` tokens for the Developer API."
+---
+
+The Developer API uses `cb_live_` bearer tokens — long-lived secrets that authenticate machine-to-machine calls from your backend.
+
+<Note>
+  API tokens are a **business-tier feature**. Free organizations see the page but can't create tokens until they upgrade.
+</Note>
+
+## Creating a token
+
+1. Open **Security → API Tokens** in the panel.
+2. Click **Create token** and give it a descriptive name (e.g. *backend prod*).
+3. Configure permissions and rate limits.
+4. Copy the `cb_live_...` secret **immediately** — it's only shown once.
+
+```
+cb_live_4f8a3b9c0d1e2f5...
+```
+
+Lost it? Hit **Regenerate** to issue a new secret. The old one is immediately invalidated.
+
+## Permissions
+
+| Permission | What it allows |
+|---|---|
+| `mcp_query` | Calling `POST /v1/chat` (default on) |
+| `mcp_admin` | Reserved — admin-scope CoreMCP commands |
+| `sources_read` | Listing connected data sources (default on) |
+| `sources_write` | Modifying source configuration |
+
+Tokens lacking `mcp_query` get `403` on `POST /v1/chat`.
+
+## Rate limits
+
+Per-token limits (configurable on creation):
+
+| Limit | Default | Max |
+|---|---|---|
+| Per minute | 60 | 10,000 |
+| Per day | 1,000 | 1,000,000 |
+| Per month | 10,000 | 10,000,000 |
+
+Rate-limit responses return `429 Too Many Requests` with a `Retry-After` header.
+
+## Pass-through prefix
+
+If you operate as a partner reselling CoreBase to multiple end-users, set a **pass-through prefix** on your token (e.g. `acme`). Audit logs then group queries by this identity, formatted as:
+
+```
+acme:<first-12-chars-of-token-id>
+```
+
+Each token = one stable identity. For per-end-user tracking, issue **one token per end-user**; the audit log lets you trace which token (and therefore which end-user) made each query. There is no inline pass-through field on the request — the identity is the token itself.
+
+## Security best practices
+
+- **Never commit tokens to source control.** Use environment variables and a secret manager.
+- **Scope by environment.** Issue separate tokens for dev / staging / prod.
+- **Rotate quarterly.** Regenerate tokens on a schedule even if they aren't compromised.
+- **Watch usage.** Each token has its own usage chart under **Tokens → \[token\] → Usage**.
+
+## Revoking
+
+Delete the token from the panel — all subsequent requests with that secret get `401`. There is no soft-delete; revocation is immediate.

@@ -1,0 +1,78 @@
+---
+title: "What is CoreMCP?"
+description: "The Go binary that keeps your raw data inside your network."
+---
+
+CoreMCP is the **local half** of CoreBase. It's a single Go binary that runs on a server inside your perimeter, holds your database credentials, and executes queries locally. CoreBase talks to it over the [Model Context Protocol](https://modelcontextprotocol.io) — either directly (Claude Desktop, MCP-aware clients) or through CoreBase Cloud as a relay.
+
+```
+┌──────────────────────────────────────┐        ┌────────────────────┐
+│  YOUR NETWORK                        │        │  CoreBase Cloud    │
+│                                      │        │                    │
+│  ┌──────────┐    ┌────────────────┐  │        │  ┌──────────────┐  │
+│  │ Database │───▶│  CoreMCP       │──┼─ MCP ─▶│  │ Orchestrator │  │
+│  │  (any)   │    │  (Go binary)   │  │        │  │ + LLM        │  │
+│  └──────────┘    └────────────────┘  │        │  └──────────────┘  │
+│                                      │        │                    │
+└──────────────────────────────────────┘        └────────────────────┘
+       Raw rows live here                          Schema metadata only
+```
+
+## Responsibilities
+
+<CardGroup cols={2}>
+  <Card title="Schema discovery" icon="table">
+    Inspect connected databases (MSSQL today, Firebird coming soon) and produce schema snapshots — table names, columns, foreign keys, indexes, column comments.
+  </Card>
+  <Card title="Query execution" icon="play">
+    Receive generated SQL, run it locally with read-only credentials, return rows over MCP. Modern protocol — no custom wire format.
+  </Card>
+  <Card title="Credential vault" icon="key">
+    Database secrets stay in `coremcp.yaml` on your server. CoreBase never sees them.
+  </Card>
+  <Card title="Legacy SQL adaptation" icon="wand">
+    Auto-detects SQL Server 2000 / 2008 and rewrites `OFFSET FETCH` / `LIMIT` for T-SQL compatibility. Turkish_CI_AS collation supported.
+  </Card>
+</CardGroup>
+
+## Transports
+
+| Transport | Use case |
+|---|---|
+| **stdio** | Direct Claude Desktop / Cursor / other MCP clients on the same machine |
+| **http** | Remote clients including CoreBase Cloud panel and widget |
+
+Configure under `server.transport` in `coremcp.yaml`. The same binary handles both.
+
+## Deployment modes
+
+| Mode | Topology | Use case |
+|---|---|---|
+| **Cloud-relay** | CoreMCP → CoreBase Cloud over HTTPS | Standard. Outbound 443 only. |
+| **Self-hosted** | CoreMCP + CoreBase together in your VPC | Regulated industries that need *zero* third-party touch |
+| **Air-gap** | Entire stack inside your perimeter, no internet | Defense, healthcare, banking — contact sales for the Enterprise Container bundle |
+
+## What's in the binary
+
+Open-source, Go 1.23+, single static binary (~30MB):
+
+- MCP server (stdio + HTTP)
+- Database drivers: MSSQL stable, Firebird in progress
+- Schema discovery with column-comment introspection
+- Custom query tools — define reusable SQL as MCP tools in YAML
+- Read-only mode by default (`readonly: true`)
+
+<Card title="See the source" icon="github" href="https://github.com/corebasehq/coremcp" horizontal>
+  Audit the protocol, contribute drivers, vendor the binary into your release process.
+</Card>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Install" icon="download" href="/coremcp/install">
+    Binary release, from source, Docker, or systemd.
+  </Card>
+  <Card title="Connect a database" icon="database" href="/coremcp/connect">
+    Connection-string playbook + per-driver options.
+  </Card>
+</CardGroup>

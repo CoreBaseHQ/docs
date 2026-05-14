@@ -1,0 +1,67 @@
+---
+title: "Authentication"
+description: "Bearer tokens for the Developer API."
+---
+
+Every Developer API request must include a `cb_live_` token in the `Authorization` header:
+
+```http
+Authorization: Bearer cb_live_4f8a3b9c0d1e2f5...
+```
+
+Tokens are issued from the panel — see [API tokens](/platform/tokens) for the UI flow.
+
+## Token format
+
+```
+cb_live_<32-char-url-safe-base64>
+```
+
+The prefix lets you spot tokens at a glance in logs and secret scanners. There is no `cb_test_` prefix today — use a dedicated organization for staging if you need isolation.
+
+## Errors
+
+| Status | `detail.error` | Cause |
+|---|---|---|
+| `401` | `Missing Authorization header` | No header sent |
+| `401` | `Invalid Authorization format` | Header not `Bearer <token>` |
+| `401` | `Invalid token format` | Token doesn't start with `cb_live_` |
+| `401` | `Invalid token` | Token revoked or never existed |
+| `403` | `Token is disabled` | Toggled off in panel |
+| `403` | `Token expired` | Past `expires_at` |
+| `403` | `Token lacks 'mcp_query' permission` | Permission not granted at creation |
+
+## Stable identity per token
+
+The Developer API derives a stable user identity from each token:
+
+```
+user_id = "{pass_through_prefix or 'api'}:{token_id[:12]}"
+```
+
+Audit logs group queries by this identity. To track multiple end-users separately, issue one token per end-user (recommended for partner integrations) — see [API tokens → pass-through prefix](/platform/tokens#pass-through-prefix).
+
+## Rotating
+
+`POST /tokens/{id}/regenerate` from the panel issues a new secret and invalidates the old one immediately. Old requests in flight return `401`. There is no overlap window.
+
+## Storing
+
+Treat `cb_live_` tokens like database passwords:
+
+- Environment variables on the host, not config files in git.
+- Secret manager in production (AWS Secrets Manager, HashiCorp Vault, etc).
+- Restrict access to deploy users only.
+
+## Permissions reference
+
+```jsonc
+{
+  "mcp_query": true,        // POST /v1/chat
+  "mcp_admin": false,       // reserved
+  "sources_read": true,     // GET /v1/sources (future)
+  "sources_write": false    // PATCH /v1/sources/* (future)
+}
+```
+
+Most tokens only need `mcp_query`. Toggle the others off to enforce least privilege.

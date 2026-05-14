@@ -1,0 +1,114 @@
+---
+title: "POST /v1/chat"
+description: "Send a conversation, stream back a grounded answer."
+---
+
+The chat endpoint takes a list of OpenAI-style messages and streams a natural-language answer back as plain text. The model has access to your tenant's data sources, Corporate Memory, and audit policies — no extra setup per call.
+
+## Request
+
+```http
+POST /v1/chat HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+Content-Type: application/json
+
+{
+  "messages": [
+    { "role": "user", "content": "How many active customers last month?" }
+  ]
+}
+```
+
+### Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `messages` | `Array<{role, content}>` | yes | Full conversation history. 1–200 items. |
+| `messages[].role` | `"user" \| "assistant" \| "system"` | yes | OpenAI-style role |
+| `messages[].content` | `string` (1–8000 chars) | yes | Message text |
+
+<Note>
+  The endpoint is **stateless** — there's no server-side `chat_id`. Pass the full history on every call. This prevents cross-organization chat hijacking and matches the OpenAI / Anthropic ergonomic.
+</Note>
+
+## Response
+
+`Content-Type: text/plain; charset=utf-8`, chunked streaming.
+
+The response is the model's answer streamed token-by-token, ready to be piped through to your end-user UI. No JSON envelope, no SSE prefixes — just the text.
+
+### Example
+
+```bash
+curl -N -X POST https://api.corebasehq.com/v1/chat \
+  -H "Authorization: Bearer cb_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Top 3 customers by revenue this quarter?"}]}'
+```
+
+```
+Top customers this quarter:
+
+1. Acme Corp — $124,500
+2. Globex — $89,100
+3. Initech — $67,200
+```
+
+## Errors
+
+| Status | `detail.error` | Meaning |
+|---|---|---|
+| `400` | validation error | Body schema invalid (see message) |
+| `401` | various | See [Authentication](/api-reference/authentication#errors) |
+| `402` | `insufficient_credits` | Balance below the per-call minimum |
+| `403` | `Token lacks 'mcp_query' permission` | Token permission missing |
+| `429` | `rate_limit_exceeded` | Per-minute/day/month limit hit |
+| `503` | `agent_disconnected` | No CoreMCP agent online to execute queries |
+
+### 402 example body
+
+```json
+{
+  "detail": {
+    "error": "insufficient_credits",
+    "plan": "pro",
+    "available_usd": 0.0023,
+    "message": "Your balance is empty. Purchase a top-up to continue."
+  }
+}
+```
+
+Handle this by linking the user to your billing UI or your reseller add-balance flow.
+
+## Pricing
+
+Each call deducts microdollars equal to `(input_tokens + output_tokens) × $3 / 1,000,000`. The deduction comes out of your subscription's monthly grant first, then your top-up balance.
+
+A small clarifying question costs ~$0.002. A complex analytical query with retrieval and summarization is ~$0.02–$0.05.
+
+Usage is also forwarded to Stripe's metered billing as a `corebase.tokens.consumed` event tied to your customer ID, so you can see it in your Stripe dashboard alongside your subscription invoices.
+
+## Multi-turn
+
+Append assistant replies to the `messages` array on subsequent calls. The model uses the full conversation as context.
+
+```jsonc
+{
+  "messages": [
+    { "role": "user", "content": "Top customers this quarter?" },
+    { "role": "assistant", "content": "Acme, Globex, Initech." },
+    { "role": "user", "content": "And how do they compare to last quarter?" }
+  ]
+}
+```
+
+## Source citations
+
+If retrieval surfaced supporting documents, the response ends with an HTML-comment manifest the panel UI uses to render source links. Strip it on the client if you don't want to show it:
+
+```regex
+<!--corebase-sources[\s\S]*?corebase-sources-->
+```
+
+The manifest never contains raw data — only source identifiers (e.g. `slack:C123/p1234567890.123`).

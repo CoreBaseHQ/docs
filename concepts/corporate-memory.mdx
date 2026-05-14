@@ -1,0 +1,57 @@
+---
+title: "Corporate Memory"
+description: "How CoreBase learns your business vocabulary without ever seeing the raw data."
+---
+
+Every company has its own dictionary. "Active customer" might mean *logged in this quarter* in one team and *paid an invoice this month* in another. Off-the-shelf AI doesn't know your dictionary — Corporate Memory does.
+
+## What gets remembered
+
+Corporate Memory is built from two signals, **neither of which contains raw data**:
+
+<CardGroup cols={2}>
+  <Card title="Schema relationships">
+    Table names, column names, foreign keys, indexes. Hashed and stored encrypted per tenant.
+  </Card>
+  <Card title="Successful query history">
+    Which queries answered which questions. Stored as redacted query templates plus the natural-language intent that produced them.
+  </Card>
+</CardGroup>
+
+No row values. No customer names. No transaction amounts. Just structure and intent.
+
+## What it produces
+
+Over time, Corporate Memory builds a per-tenant glossary:
+
+- **Concept → SQL pattern** — "active customer" maps to `customers WHERE last_login > now() - interval '30 days'` in your schema, even though the column is called `son_giris_tarihi`.
+- **Concept → table joins** — "order with shipping" knows to join `orders` × `shipments` × `addresses` because that's how your team historically queried it.
+- **Domain-specific aliases** — "müşteri", "client", "abone" all collapse into the same concept once the team uses them interchangeably.
+
+The model gets this context injected as part of the system prompt before generating SQL. You don't have to teach it — it watches and updates.
+
+## Per-tenant isolation
+
+Corporate Memory is **strictly tenant-scoped**. Two organizations using CoreBase build two independent glossaries — no cross-tenant leakage, no shared training. PostgreSQL row-level security enforces the isolation at the database layer.
+
+## Plan availability
+
+<Card title="Free plan" icon="lock" horizontal>
+  **Disabled.** No retrieval, no glossary lookup — the model runs on raw schema names only.
+</Card>
+
+<Card title="Pro / Team / Enterprise" icon="check" horizontal>
+  Adaptive memory enabled. Glossary learns from successful queries and is injected into every prompt.
+</Card>
+
+<Tip>
+  Corporate Memory improves as your team uses it — the more queries it sees, the more accurate the generated SQL becomes.
+</Tip>
+
+## What you control
+
+In the panel under **Semantic Layer**:
+
+- **Annotations** — pin a concept manually ("VIP customer = customers.tier IN ('gold','platinum')") instead of waiting for the model to learn it.
+- **Glossary** — view, edit, or delete learned terms.
+- **Audit** — see exactly when a term was added and which query introduced it.

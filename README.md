@@ -1,55 +1,130 @@
-# Mintlify Starter Kit
+# CoreBase Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+Source for [docs.corebasehq.com](https://docs.corebasehq.com). Built with [Mintlify](https://mintlify.com).
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+Anyone can contribute — typo fixes, clarifications, new guides, or full new sections. See [Contributing](#contributing) below.
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Repo layout
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+```
+docs/
+├── docs.json                     ← site config: theme, nav, navbar
+├── index.mdx                     ← landing page
+├── quickstart.mdx
+├── concepts/                     ← architecture & security primers
+├── platform/                     ← web panel walkthroughs
+├── coremcp/                      ← local agent install & config
+├── api-reference/                ← Developer API spec
+│   ├── endpoints/
+│   └── webhooks/
+├── images/                       ← screenshots, diagrams
+└── logo/                         ← brand marks (light + dark)
+```
 
-## AI-assisted writing
+Pages are MDX (Markdown + JSX). Every page starts with YAML frontmatter:
 
-Set up your AI coding tool to work with Mintlify:
+```mdx
+---
+title: "Page title"
+description: "Short summary shown in search & OG tags."
+---
+
+# Body starts here…
+```
+
+## Local preview
+
+You'll need Node 18+.
 
 ```bash
-npx skills add https://mintlify.com/docs
+npm i -g mint          # one time
+git clone https://github.com/corebasehq/docs && cd docs
+mint dev               # opens http://localhost:3000
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Pages hot-reload on save. If `mint dev` ever gets stuck, run `mint update`.
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## Contributing
 
-## Development
+### Small fixes (typos, broken links, copy edits)
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+Easiest path:
 
-```
-npm i -g mint
-```
+1. Open the page on [docs.corebasehq.com](https://docs.corebasehq.com).
+2. Click **Edit this page** in the right rail. GitHub opens the source.
+3. Make your edit, write a short PR description, submit.
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+A maintainer reviews and merges, usually within a day.
 
-```
-mint dev
-```
+### Larger changes (new pages, restructured sections)
 
-View your local preview at `http://localhost:3000`.
+1. **Open an issue first** — describe the gap and the structure you have in mind. We'll point you at the right home for it before you write much.
+2. Fork the repo, create a branch like `docs/billing-faq`.
+3. Add or edit `.mdx` files. Use existing pages as a style reference.
+4. If you add a new page, register it in `docs.json` under the appropriate `tabs[].groups[].pages` array.
+5. Run `mint dev` and click through every page you touched.
+6. Run `mint broken-links` — fix any broken hrefs.
+7. Open a PR. Reference the issue you opened in step 1.
 
-## Publishing changes
+### What goes in `docs/` vs the main repo
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+| Belongs here | Belongs in the product repo |
+|---|---|
+| User-facing how-tos | Internal architecture decisions |
+| API surface (request / response) | Implementation details |
+| Concepts the customer needs to understand | Internal services, queues |
+| Public roadmap | Sprint plans |
 
-## Need help?
+If you're unsure, ask in the issue.
 
-### Troubleshooting
+## Writing style
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+A few rules we hold tight to — see [`AGENTS.md`](./AGENTS.md) for the full list.
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+- **Active voice, second person.** "Run the command", "You can…", not "The command should be run".
+- **Sentence case headings.** "Connect a data source", not "Connect A Data Source".
+- **Code formatting** for file names, paths, commands, env vars.
+- **Bold for UI labels**: Click **Sources → Add agent**.
+- **One idea per sentence.** Short paragraphs.
+- **Lead with the goal.** Open each section with what the reader is trying to do.
+- **Show, don't only tell.** Code samples beat prose every time.
+
+### Components
+
+Mintlify's MDX components are documented at [mintlify.com/docs](https://mintlify.com/docs). The ones we lean on most:
+
+- `<CardGroup>` / `<Card>` — landing pages, cross-links between sections
+- `<Steps>` / `<Step>` — numbered procedures
+- `<Tip>` / `<Note>` / `<Warning>` — callouts
+- `<CodeGroup>` — multi-language code samples
+
+### Images
+
+- Put them in `images/`, reference with `/images/your-image.png`.
+- Wrap screenshots in `<Frame>` so they get a border + caption styling.
+- Compress before committing — under 200KB if possible.
+
+## Deployment
+
+The `main` branch deploys automatically. PRs get a preview URL once a Mintlify maintainer approves the build.
+
+There is no staging — we ship to docs.corebasehq.com directly on merge. Reverting is a one-line PR if something goes sideways.
+
+## Reporting problems with the docs
+
+Found something confusing, wrong, or missing? Open an issue with:
+
+- The page URL
+- What you expected vs. what you found
+- (Optional) a suggested fix
+
+We treat doc bugs the same as code bugs.
+
+## License
+
+Documentation is MIT licensed (`LICENSE`). The CoreBase product is governed by the [Terms of Service](https://corebasehq.com/terms).
+
+## Questions
+
+- [hi@corebasehq.com](mailto:hi@corebasehq.com) — anything else
+- [@corebasehq on X](https://x.com/corebasehq) — quick async questions

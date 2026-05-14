@@ -2,10 +2,14 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "CoreBase",
+  "description": "The Corporate Memory Layer for Enterprise AI",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0A0A0A",
+    "light": "#FAFAFA",
+    "dark": "#000000"
+  },
+  "appearance": {
+    "default": "light"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -17,32 +21,47 @@
             "group": "Getting started",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/corporate-memory",
+              "concepts/zero-raw-data-egress",
+              "concepts/rbac"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Platform",
+        "groups": [
+          {
+            "group": "Account",
+            "pages": [
+              "platform/intro",
+              "platform/billing",
+              "platform/tokens"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Integrations",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "platform/widget"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "CoreMCP",
+        "groups": [
           {
-            "group": "AI tools",
+            "group": "CoreMCP",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "coremcp/intro",
+              "coremcp/install",
+              "coremcp/connect"
             ]
           }
         ]
@@ -51,63 +70,53 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Developer API",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/authentication"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Endpoints",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoints/chat",
+              "api-reference/endpoints/credits"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "api-reference/webhooks/stripe"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Platform",
-          "href": "https://docs.corebasehq.com/platform/intro",
-          "icon": "building"
-        },
-        {
-          "anchor": "CoreMCP",
-          "href": "https://docs.corebasehq.com/coremcp/intro",
-          "icon": "code"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://corebasehq.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/logo.svg",
+    "dark": "/logo/logo-dark.svg"
   },
   "navbar": {
     "links": [
       {
+        "label": "Status",
+        "href": "https://status.corebasehq.com"
+      },
+      {
         "label": "Support",
-        "href": "mailto:hi@corebasehq.com"
+        "href": "mailto:support@corebasehq.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.corebasehq.com"
+      "href": "https://corebasehq.com/panel"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/corebase",
+      "x": "https://x.com/corebasehq",
       "github": "https://github.com/corebasehq",
       "linkedin": "https://linkedin.com/company/corebasehq"
     }

@@ -1,0 +1,84 @@
+---
+title: "Developer API"
+description: "Embed CoreBase in your product with `cb_live_` tokens."
+---
+
+The Developer API lets you build natural-language data queries into your own application. Same auth model as the panel, same access policies, same Corporate Memory — wrapped in a small REST surface designed to be easy to call from any backend.
+
+## Base URL
+
+```
+https://api.corebasehq.com
+```
+
+For self-hosted deployments, replace with your CoreBase domain.
+
+## What you can do
+
+<CardGroup cols={2}>
+  <Card title="Chat" icon="messages" href="/api-reference/endpoints/chat">
+    Send a conversation history, get a streaming text answer grounded in your data.
+  </Card>
+  <Card title="Credits" icon="wallet" href="/api-reference/endpoints/credits">
+    Check the remaining balance attached to your token's organization.
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/api-reference/webhooks/stripe">
+    Stripe billing events that adjust your balance.
+  </Card>
+</CardGroup>
+
+## How it differs from the panel API
+
+The panel uses Clerk JWTs and exposes the full surface — sources, policies, audit, billing. The Developer API uses long-lived `cb_live_` tokens and exposes a deliberately small surface: chat + balance. If you need source management, do it from the panel.
+
+## Versioning
+
+The Developer API is versioned at the URL prefix:
+
+```
+https://api.corebasehq.com/v1/chat
+```
+
+We avoid breaking changes within a major version. When `v2` ships, `v1` stays online for at least 12 months with deprecation warnings in the `Sunset` header.
+
+## Rate limits
+
+Each `cb_live_` token has its own per-minute, per-day, and per-month limits configured at issuance. Hit a limit and you get `429 Too Many Requests` with `Retry-After`.
+
+## Errors
+
+| HTTP | Meaning |
+|---|---|
+| 401 | Missing or invalid token |
+| 402 | Insufficient credit balance |
+| 403 | Token lacks the required permission |
+| 429 | Rate limit exceeded |
+| 5xx | Transient server-side issue — safe to retry with exponential backoff |
+
+The body is JSON for any non-2xx response. `4xx`s carry a stable `detail.error` string you can branch on; `5xx`s carry a request ID for support.
+
+## Quick example
+
+```bash
+curl -N -X POST https://api.corebasehq.com/v1/chat \
+  -H "Authorization: Bearer cb_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "How many active customers last month?"}
+    ]
+  }'
+```
+
+Response is streaming `text/plain` — pipe it straight through to your end-user UI.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Create tokens, scope permissions, rotate secrets.
+  </Card>
+  <Card title="Chat endpoint" icon="terminal" href="/api-reference/endpoints/chat">
+    Full request / response spec for `POST /v1/chat`.
+  </Card>
+</CardGroup>

@@ -1,0 +1,88 @@
+---
+title: "Zero Raw Data Egress"
+description: "Where your data lives in every CoreBase deployment mode."
+---
+
+CoreBase is built so your **database credentials never leave your network** and so any data we do see is **isolated per tenant and encrypted at rest**. How tight the perimeter gets depends on your deployment mode.
+
+## The two halves
+
+<CardGroup cols={2}>
+  <Card title="CoreMCP (your server)" icon="server">
+    A Go binary running inside your perimeter. Holds database credentials, opens connections, runs read-only SELECTs.
+  </Card>
+  <Card title="CoreBase Cloud (or self-hosted)" icon="cloud">
+    The orchestrator. Holds your account, plans, encrypted schema metadata, chat history, and the LLM glue. Multi-tenant isolated via PostgreSQL Row Level Security.
+  </Card>
+</CardGroup>
+
+The two halves talk to each other over **Model Context Protocol** — stdio when co-located (Claude Desktop), HTTP / HTTPS otherwise.
+
+## What stays on your server, always
+
+| What | Where | Why |
+|---|---|---|
+| Database credentials | CoreMCP config (your disk) | Never transmitted, ever |
+| Connection pool | CoreMCP process memory | Connections originate inside your network |
+| Direct query plans / cache | CoreMCP process memory | Stays in the agent |
+
+## What CoreBase sees — by deployment mode
+
+### Cloud-relay (managed)
+
+When the orchestrator is CoreBase Cloud:
+
+| Direction | Payload |
+|---|---|
+| Cloud → Agent | Schema-discovery requests, SQL statements, natural-language prompts |
+| Agent → Cloud | Schema metadata, **query result rows**, and the model's final answer |
+
+Rows traverse the wire over TLS 1.2+. They reach our orchestrator and are forwarded to the configured LLM provider (Gemini / OpenAI / Azure). Anything we persist is encrypted with a **per-tenant AES-GCM key**, and PostgreSQL Row Level Security prevents cross-tenant reads even with database-level access.
+
+This is the cheapest, fastest mode. Use it when "CoreBase as a SaaS vendor" fits your compliance model — same posture you'd accept for any LLM API provider.
+
+### Self-hosted
+
+When you deploy the CoreBase Cloud component inside your own VPC:
+
+- Same protocol, same code
+- Rows stay inside your VPC — they reach your CoreBase pods, not ours
+- LLM call still goes to whichever provider you configure; for a fully internal model, point CoreBase at a self-hosted vLLM / Ollama / Together endpoint
+
+### Air-gap (Enterprise Container)
+
+The strictest mode:
+
+- The entire stack — CoreMCP + CoreBase + a local LLM (Llama 3, Mistral, your choice) — runs inside your perimeter
+- Outbound network can be fully blocked
+- **Raw rows physically cannot leave** — there is no remote endpoint to send them to
+
+For regulated industries — defense, healthcare, banking. Contact sales for the Enterprise Container bundle.
+
+## What's stored on the orchestrator (any deployment)
+
+| Data | Encryption | Cross-tenant access? |
+|---|---|---|
+| Hashed schema metadata | AES-GCM, per-tenant key | Blocked by RLS |
+| Chat transcripts (prompts + answers) | AES-GCM, per-tenant key | Blocked by RLS |
+| Audit log (who asked what, which policies fired) | AES-GCM, per-tenant key | Blocked by RLS |
+| Corporate Memory (concepts → SQL patterns) | AES-GCM, per-tenant key | Blocked by RLS |
+| Database credentials | — | **Never stored** |
+
+## Compliance posture summary
+
+| Mode | GDPR / KVKK | HIPAA / PCI | Sovereignty |
+|---|---|---|---|
+| **Cloud-relay** | DPA + EU region option | Possible with BAA — contact us | Best-effort |
+| **Self-hosted** | Your tenancy, your jurisdiction | You hold all keys | Full |
+| **Air-gap** | Zero external footprint | Suitable for restricted networks | Absolute |
+
+## Verifying it yourself
+
+CoreMCP is open source. Read the [MCP request handlers](https://github.com/corebasehq/coremcp/tree/main/pkg) — query execution is bounded to a small surface and `readonly: true` is the default on every source.
+
+For CoreBase Cloud, the encryption pipeline lives in [`apps/server/src/core/crypto.py`](https://github.com/corebasehq/corebase) — every persisted field with sensitive content runs through `encrypt_message(value, tenant_key)`.
+
+<Card title="See the source" icon="github" href="https://github.com/corebasehq/coremcp" horizontal>
+  Audit the agent's protocol, write your own driver, or vendor the binary into your release process.
+</Card>

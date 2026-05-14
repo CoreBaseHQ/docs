@@ -1,0 +1,71 @@
+---
+title: "GET /v1/credits"
+description: "Check the credit balance attached to your token's organization."
+---
+
+Returns the current balance and plan for the organization the calling `cb_live_` token belongs to. Useful for surfacing balance widgets to your end-users or guarding heavy operations before they run.
+
+## Request
+
+```http
+GET /v1/credits HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+No body, no query parameters.
+
+## Response
+
+```json
+{
+  "plan": "pro",
+  "included_usd": 18.74,
+  "topup_usd": 25.0,
+  "total_usd": 43.74
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `plan` | `"free" \| "pro" \| "team" \| "enterprise"` | Current subscription tier |
+| `included_usd` | `number` | Remaining balance from the monthly subscription grant. Resets every cycle. |
+| `topup_usd` | `number` | Top-up balance — accumulated from one-time purchases. Never expires. |
+| `total_usd` | `number` | Convenience: `included_usd + topup_usd` |
+
+## Errors
+
+Standard authentication errors apply — see [Authentication → Errors](/api-reference/authentication#errors).
+
+## Examples
+
+### Show a balance widget
+
+```js
+const res = await fetch("https://api.corebasehq.com/v1/credits", {
+  headers: { Authorization: `Bearer ${process.env.CB_LIVE}` },
+});
+const { total_usd } = await res.json();
+ui.setBalance(total_usd);
+```
+
+### Guard a heavy operation
+
+```python
+import httpx
+
+def can_afford(estimated_usd: float, token: str) -> bool:
+    r = httpx.get(
+        "https://api.corebasehq.com/v1/credits",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    r.raise_for_status()
+    return r.json()["total_usd"] >= estimated_usd
+
+if not can_afford(0.05, CB_LIVE):
+    raise RuntimeError("Top up before running the bulk report")
+```
+
+## Caching
+
+Balance changes on every successful chat call and on any billing webhook. Treat it as live data — don't cache for more than a few seconds.

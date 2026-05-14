@@ -1,0 +1,66 @@
+---
+title: "Billing"
+description: "Plans, prepaid balance, top-ups, and usage."
+---
+
+CoreBase uses a **prepaid credit model** — your balance is in real US dollars, and each query deducts based on tokens consumed. Subscriptions grant a monthly included-usage allowance; top-ups add to a balance that never expires.
+
+## Plans
+
+<CardGroup cols={2}>
+  <Card title="Free" icon="bolt">
+    **$0/month** · $1 one-time trial credit · 1 data source · Corporate Memory **off** · No top-ups
+  </Card>
+  <Card title="Pro" icon="crown">
+    **$49/month** · $20 usage included · 3 data sources · Corporate Memory **on** · Top-ups
+  </Card>
+  <Card title="Team" icon="users">
+    **$149/month** · $50 usage included · 10 data sources · Audit Log + RBAC · Top-ups
+  </Card>
+  <Card title="Enterprise" icon="building">
+    Custom · Air-gap deployment · SLA · Yearly contract · Contact sales
+  </Card>
+</CardGroup>
+
+## How charges work
+
+| Resource | Cost |
+|---|---|
+| Tokens (input + output) | $3 per million tokens |
+| Subscription seat | Flat monthly fee (Pro / Team) |
+| Top-up purchase | Custom amount, $5–$200, 1:1 USD → credit |
+
+A typical "small" question (~1,000 tokens roundtrip) costs about **$0.003**. A complex analytical query with retrieval and synthesis can be **$0.02–$0.05**.
+
+## Deduction order
+
+When a query consumes credit:
+
+1. The cost comes out of your **monthly grant** first (the allowance from your active subscription).
+2. If that runs out, it spills into your **top-up balance** (never expires).
+3. If both are empty, the API returns `402 Payment Required` and the panel surfaces an upgrade prompt.
+
+<Tip>
+  Top-up credits **never expire** and survive subscription cancellation. Monthly grants reset every billing cycle.
+</Tip>
+
+## Adding balance
+
+In **Billing → Add Credits**, enter any amount between **$5 and $200**. You're redirected to a Stripe-hosted checkout. Once paid, your balance updates within a few seconds via webhook. The exact amount you paid (minus Stripe fees, on our side) is credited 1:1 to your top-up balance.
+
+## Managing your subscription
+
+Click **Manage subscription** in the billing page to open the Stripe Customer Portal. From there:
+
+- Switch between Pro and Team
+- Update payment method
+- Cancel (you keep access until the period end)
+- Download invoices
+
+## Usage analytics
+
+Per-query usage is also forwarded to Stripe's metered usage system as a `corebase.tokens.consumed` event tied to your customer ID. This means token usage shows up on your Stripe dashboard alongside the prepaid charges — no surprises on the invoice.
+
+## Refunds
+
+Top-up credits are non-refundable once the Stripe charge clears, but unused balance never expires. Subscription cancellations take effect at the end of the current period — no proration.
