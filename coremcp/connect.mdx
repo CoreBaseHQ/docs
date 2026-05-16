@@ -5,16 +5,17 @@ description: "Connection strings and per-driver options for the CoreMCP agent."
 
 CoreMCP's agent config (`coremcp.yaml`) carries one or more *sources*. Each source is a database the agent will expose to CoreBase. Reload by restarting the agent (`systemctl restart coremcp` or stop/start the binary).
 
-## Supported drivers
+## Supported sources
 
-| Driver | Status |
-|---|---|
-| Microsoft SQL Server (2000+) | ✅ Stable |
-| Firebird | 🚧 Coming soon |
-| PostgreSQL | 🗺 On the roadmap |
-| MySQL / MariaDB | 🗺 On the roadmap |
+| Type | Status | Notes |
+|---|---|---|
+| `mssql` | ✅ Stable | SQL Server 2000+, Turkish_CI_AS, NOLOCK option |
+| `rest` | ✅ Stable | OpenAPI/Swagger spec → typed MCP tools |
+| `graphql` | ✅ Stable | Schema introspection → parameterized tools |
+| `firebird` | 🚧 Placeholder | Adapter wired, implementation in progress |
+| `postgres` / `mysql` | 🗺 Roadmap | Track [coremcp issues](https://github.com/corebasehq/coremcp/issues) |
 
-Need a driver that isn't listed? CoreMCP exposes an [adapter interface](https://github.com/corebasehq/coremcp/tree/main/pkg/adapters) — community PRs welcome.
+Need a driver that isn't listed? CoreMCP exposes an [adapter interface](https://github.com/corebasehq/coremcp/tree/main/pkg/adapter) — community PRs welcome.
 
 ## Microsoft SQL Server
 
@@ -72,14 +73,14 @@ Comment out the entry in `coremcp.yaml` and restart the agent. Existing chat ses
 
 ## Custom query tools
 
-CoreMCP lets you define reusable SQL queries as MCP tools your AI can call. Example:
+Define reusable SQL queries as named MCP tools your client can call directly. They show up alongside auto-discovered tools.
 
 ```yaml
-tools:
+custom_tools:
   - name: "top_customers"
     description: "Top customers by revenue this quarter"
     source: "erp_prod"
-    sql: |
+    query: |
       SELECT TOP 10
         c.name,
         SUM(o.total) AS revenue
@@ -90,7 +91,7 @@ tools:
       ORDER BY revenue DESC
 ```
 
-See [coremcp.example.yaml](https://github.com/corebasehq/coremcp/blob/main/coremcp.example.yaml) for the full schema.
+For parameterized tools with typed inputs, see [Configuration reference → custom_tools](/coremcp/configuration#custom-tools).
 
 ## Hardening
 

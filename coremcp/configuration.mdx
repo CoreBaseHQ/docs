@@ -1,0 +1,244 @@
+---
+title: "Configuration reference"
+description: "Complete YAML schema for coremcp.yaml."
+---
+
+CoreMCP loads `coremcp.yaml` from the binary's directory by default. Override with `--config /path/to/file.yaml`. All sections are optional except `sources` (you need at least one).
+
+## Top-level shape
+
+```yaml
+server: { ... }
+logging: { ... }
+sources: [ ... ]
+custom_tools: [ ... ]
+security: { ... }
+```
+
+## `server`
+
+```yaml
+server:
+  name: "coremcp-agent"
+  version: "0.4.6"
+  transport: "stdio"
+  port: 8080
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | `"coremcp-agent"` | Identifier reported on MCP handshake |
+| `version` | string | from binary | Version string surfaced to MCP clients |
+| `transport` | `"stdio"` \| `"http"` | `"stdio"` | Wire protocol — `stdio` for Claude Desktop / Cursor, `http` for remote |
+| `port` | int | `8080` | Listen port (HTTP transport only) |
+
+## `logging`
+
+```yaml
+logging:
+  level: "info"
+  format: "json"
+```
+
+| Field | Allowed | Default |
+|---|---|---|
+| `level` | `debug` \| `info` \| `warn` \| `error` | `info` |
+| `format` | `text` \| `json` | `json` |
+
+JSON format is the right choice for systemd / Docker — easier to ship into Loki, Datadog, etc.
+
+## `sources`
+
+A list. Each entry defines one database or API the agent will expose to MCP clients. Source names must be unique within an agent.
+
+### Database sources (`mssql`)
+
+```yaml
+sources:
+  - name: "erp_prod"
+    type: "mssql"
+    dsn: "sqlserver://core_ro:password@10.0.0.5:1433?database=ERP&encrypt=disable"
+    readonly: true
+    no_lock: false
+    normalize_turkish: false
+```
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `name` | string | — | Source identifier used in tool calls |
+| `type` | `"mssql"` \| `"rest"` \| `"graphql"` \| `"firebird"` | — | Adapter selection |
+| `dsn` | string | — | Connection string — see below |
+| `readonly` | bool | `true` | When `true`, only `SELECT` is allowed and `execute_procedure` is hidden |
+| `no_lock` | bool | `false` | MSSQL only: `READ UNCOMMITTED` isolation (equivalent to `WITH (NOLOCK)`) |
+| `normalize_turkish` | bool | `false` | MSSQL only: normalize Turkish characters for `Turkish_CI_AS` collation |
+
+<Note>
+  `firebird` is a placeholder — the factory returns "not implemented yet" on connect. Tracking issue: [firebird driver](https://github.com/corebasehq/coremcp/issues).
+</Note>
+
+### REST sources
+
+```yaml
+sources:
+  - name: "billing_api"
+    type: "rest"
+    base_url: "https://api.acme.example/v1"
+    api_key: "${ACME_API_KEY}"
+    spec_url: "https://api.acme.example/openapi.json"
+    headers:
+      X-Tenant-Id: "42"
+    timeout: 30
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `base_url` | — | API root |
+| `api_key` | — | Bearer token, included as `Authorization: Bearer <key>` |
+| `spec_url` | — | OpenAPI/Swagger spec — endpoints become typed MCP tools |
+| `headers` | `{}` | Extra headers on every request |
+| `timeout` | `30` | Per-request timeout in seconds |
+
+### GraphQL sources
+
+```yaml
+sources:
+  - name: "shopify"
+    type: "graphql"
+    base_url: "https://shop.myshopify.com/api/2024-10/graphql.json"
+    api_key: "${SHOPIFY_TOKEN}"
+    headers:
+      X-Shopify-Access-Token: "${SHOPIFY_TOKEN}"
+    timeout: 30
+```
+
+Schema introspection runs once on startup; queries become parameterized MCP tools.
+
+## `custom_tools`
+
+Define reusable SQL or API queries as named MCP tools your client can call directly.
+
+```yaml
+custom_tools:
+  - name: "top_customers_by_revenue"
+    description: "Top customers by revenue in the last N days"
+    source: "erp_prod"
+    query: |
+      SELECT TOP 10
+        c.name,
+        SUM(o.total) AS revenue
+      FROM customers c
+      JOIN orders o ON o.customer_id = c.id
+      WHERE o.created_at >= DATEADD(day, -:days_back, GETDATE())
+      GROUP BY c.name
+      ORDER BY revenue DESC
+    parameters:
+      - name: "days_back"
+        description: "How many days to look back"
+        required: true
+        type: "integer"
+        default: "30"
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | Tool identifier (no spaces) |
+| `description` | string | Surfaced to the LLM — be specific |
+| `source` | string | Must match a `sources[].name` |
+| `query` | string | SQL or operation template with `:param` placeholders |
+| `parameters[].name` | string | Placeholder name |
+| `parameters[].description` | string | What it represents |
+| `parameters[].required` | bool | If `false`, `default` is used when not provided |
+| `parameters[].type` | `string` \| `integer` \| `number` \| `date` \| `identifier` | Strongly recommended — see below |
+| `parameters[].default` | string | Default value if not required |
+
+<Warning>
+  Always set `type` for parameters. The default is `string` which uses parameterized binding; `integer` and `number` validate before interpolation. `identifier` quotes the value safely for table/column names. **Without a type, never interpolate a parameter outside of a quoted string** — it's a SQL injection vector.
+</Warning>
+
+## `security`
+
+```yaml
+security:
+  max_row_limit: 1000
+  enable_pii_masking: false
+  pii_patterns:
+    - name: "credit_card"
+      pattern: '\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b'
+      replacement: "***"
+      enabled: true
+  allowed_keywords: []
+  blocked_keywords: []
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `max_row_limit` | `1000` | Hard cap on rows returned per query — clamps `SELECT TOP N` |
+| `enable_pii_masking` | `false` | When `true`, applies `pii_patterns` to result cells before returning |
+| `pii_patterns[]` | `[]` | Regex-based redactions |
+| `allowed_keywords` | `[]` | Extra SQL keywords beyond `SELECT` / `WITH` that the parser will accept |
+| `blocked_keywords` | `[]` | Additional keywords to refuse (in addition to the default blocklist) |
+
+## Environment variable expansion
+
+Anywhere a string is expected, CoreMCP expands `${VAR}` from the process environment. Useful for keeping secrets out of the YAML file:
+
+```yaml
+sources:
+  - name: "erp_prod"
+    type: "mssql"
+    dsn: "sqlserver://core_ro:${ERP_PASSWORD}@10.0.0.5:1433?database=ERP&encrypt=disable"
+```
+
+## Full example
+
+A complete `coremcp.yaml` exercising every section:
+
+```yaml
+server:
+  name: "coremcp-agent"
+  version: "0.4.6"
+  transport: "stdio"
+
+logging:
+  level: "info"
+  format: "json"
+
+sources:
+  - name: "erp_prod"
+    type: "mssql"
+    dsn: "sqlserver://core_ro:${ERP_PASSWORD}@10.0.0.5:1433?database=ERP&encrypt=disable"
+    readonly: true
+    no_lock: true
+    normalize_turkish: true
+
+  - name: "billing_api"
+    type: "rest"
+    base_url: "https://api.acme.example/v1"
+    api_key: "${ACME_KEY}"
+    spec_url: "https://api.acme.example/openapi.json"
+    timeout: 30
+
+custom_tools:
+  - name: "monthly_revenue"
+    description: "Total revenue for a given month"
+    source: "erp_prod"
+    query: |
+      SELECT SUM(total) AS revenue
+      FROM orders
+      WHERE YEAR(created_at) = :year
+        AND MONTH(created_at) = :month
+    parameters:
+      - { name: "year",  type: "integer", required: true }
+      - { name: "month", type: "integer", required: true }
+
+security:
+  max_row_limit: 5000
+  enable_pii_masking: true
+  pii_patterns:
+    - name: "email"
+      pattern: '\b[\w.+-]+@[\w-]+\.[\w.-]+\b'
+      replacement: "[email]"
+      enabled: true
+```
+
+See [coremcp.example.yaml](https://github.com/corebasehq/coremcp/blob/main/coremcp.example.yaml) in the repo for the most up-to-date annotated reference.

@@ -57,11 +57,18 @@
         "tab": "CoreMCP",
         "groups": [
           {
-            "group": "CoreMCP",
+            "group": "Get started",
             "pages": [
               "coremcp/intro",
               "coremcp/install",
-              "coremcp/connect"
+              "coremcp/clients"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "coremcp/connect",
+              "coremcp/configuration"
             ]
           }
         ]

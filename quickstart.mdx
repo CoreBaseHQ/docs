@@ -1,72 +1,80 @@
 ---
 title: "Quickstart"
-description: "Connect a database and run your first query in 5 minutes."
+description: "From zero to your first natural-language query in 5 minutes."
 ---
 
-This guide takes you from zero to your first natural-language query. You'll need shell access to a server that can reach your database and a CoreBase account.
+You need shell access to a server that can reach your database and (optionally) a CoreBase Cloud account if you want the panel, audit log, and Corporate Memory layer.
 
 <Steps>
-  <Step title="Create an account">
-    Sign up at [app.corebasehq.com](https://app.corebasehq.com). New organizations start on the **Free** plan with a $1 trial credit — enough for ~300 small queries.
-  </Step>
-  <Step title="Install CoreMCP on your server">
-    CoreMCP is a small Go binary that talks to your databases locally and tunnels schema metadata to CoreBase. It never sends raw rows over the network.
-
-    Grab the latest release for your platform from [github.com/corebasehq/coremcp/releases](https://github.com/corebasehq/coremcp/releases), or build from source:
+  <Step title="Install CoreMCP">
+    One command — POSIX shell installer detects your OS/arch, verifies SHA256, drops the binary in `PATH`:
 
     ```bash
-    git clone https://github.com/corebasehq/coremcp.git
-    cd coremcp && go build -o coremcp ./cmd/coremcp
+    curl -fsSL https://get.corebasehq.com | sh
     ```
 
-    See [CoreMCP installation](/coremcp/install) for the full setup, including Docker and air-gap.
+    Prefer Docker? `docker pull y11t0/coremcp:latest`. From source? `go build ./cmd/coremcp`. See [Install](/coremcp/install) for all paths.
   </Step>
-  <Step title="Register the agent">
-    In the panel, open **Sources → Add agent** and copy the agent token. Drop your `coremcp.yaml` next to the binary:
+  <Step title="Configure a source">
+    Create `coremcp.yaml` (or override with `--config /path/to/file.yaml`):
 
     ```yaml
     server:
-      name: "coremcp-agent"
-      transport: "stdio"
+      transport: stdio
 
     sources:
-      - name: "erp_prod"
-        type: "mssql"
+      - name: erp_prod
+        type: mssql
         dsn: "sqlserver://core_ro:password@10.0.0.5:1433?database=ERP&encrypt=disable"
         readonly: true
     ```
 
-    Today only **MSSQL** is fully supported; Firebird is on the way. See [Connect a data source](/coremcp/connect) for the full DSN catalog.
+    Use a database user with `SELECT`-only grants. See [Connect a data source](/coremcp/connect) for `mssql`, `rest`, and `graphql` DSN catalogs; full schema in [Configuration reference](/coremcp/configuration).
   </Step>
-  <Step title="Sync your schema">
-    In **Sources**, click **Sync schema**. CoreBase reads table and column metadata, hashes identifiers, and stores them encrypted on our side. The agent stays online and answers schema or query requests on demand.
+  <Step title="Wire to an MCP client">
+    For Claude Desktop — edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
-    <Tip>
-      Free plan: Corporate Memory is **disabled** — the model only sees raw schema names. Pro and Team unlock adaptive memory that learns your business vocabulary across queries.
-    </Tip>
+    ```json
+    {
+      "mcpServers": {
+        "corebase": {
+          "command": "/usr/local/bin/coremcp",
+          "args": ["serve", "--config", "/etc/coremcp/coremcp.yaml"]
+        }
+      }
+    }
+    ```
+
+    Restart Claude. Your tables surface as MCP tools under the hammer icon. Cursor, Continue, Zed: see [MCP clients](/coremcp/clients).
   </Step>
-  <Step title="Run your first query">
-    Open **Chat** and ask something like:
+  <Step title="Ask">
+    In your editor or Claude Desktop:
 
     > How many customers signed up last month and what's the average order value?
 
-    CoreBase generates SQL, the agent executes it against your database, and the model summarizes the rows. Raw values stay on your server — only the redacted answer comes back.
+    The model picks the right MCP tools, CoreMCP runs the SQL against your DB locally, returns rows to the client, the model summarizes. **Raw values stay on your network.**
   </Step>
 </Steps>
+
+## Add the cloud layer (optional)
+
+Want a hosted chat UI, RBAC, audit log, Corporate Memory, and the Developer API? Sign up at [corebasehq.com](https://corebasehq.com) — free tier ships with a $1 trial credit.
+
+The cloud panel orchestrates queries through the same CoreMCP agent. Configure your agent's `transport: http` and connect it from **Sources → Add agent**.
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Set access policies" icon="shield" href="/concepts/rbac">
+  <Card title="Configuration reference" icon="file-code" href="/coremcp/configuration">
+    Every YAML field — sources, security, custom_tools.
+  </Card>
+  <Card title="MCP clients" icon="plug" href="/coremcp/clients">
+    Claude Desktop, Cursor, Continue, Zed.
+  </Card>
+  <Card title="Access policies" icon="shield" href="/concepts/rbac">
     Restrict who can query which tables — by team, role, or column.
   </Card>
-  <Card title="Embed the widget" icon="puzzle-piece" href="/platform/widget">
-    Drop CoreBase chat into your own product with one script tag.
-  </Card>
-  <Card title="Use the API" icon="terminal" href="/api-reference/introduction">
-    Build natural-language queries into your backend.
-  </Card>
-  <Card title="Pick a plan" icon="wallet" href="/platform/billing">
-    See pricing and what's included on Pro / Team.
+  <Card title="Developer API" icon="terminal" href="/api-reference/introduction">
+    `POST /v1/chat` with `cb_live_` tokens.
   </Card>
 </CardGroup>

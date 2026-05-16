@@ -1,0 +1,124 @@
+---
+title: "MCP clients"
+description: "Wire CoreMCP into Claude Desktop, Cursor, Continue, and Zed."
+---
+
+CoreMCP speaks Model Context Protocol over `stdio` and `http` transports. Any MCP-aware client works — below are the config snippets for the four most common.
+
+## Prerequisites
+
+- CoreMCP installed locally — see [Install](/coremcp/install)
+- A valid `coremcp.yaml` with at least one source — see [Connect a data source](/coremcp/connect)
+- The binary discoverable at `/usr/local/bin/coremcp` (default install path) or specify the full path in your client config
+
+## Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "corebase": {
+      "command": "/usr/local/bin/coremcp",
+      "args": ["serve", "--config", "/etc/coremcp/coremcp.yaml"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The tools surface under the hammer icon — you'll see `list_tables`, `describe_table`, and any custom tools defined in your YAML.
+
+<Tip>
+  Use absolute paths in the config. Claude Desktop spawns the binary in a minimal environment without your shell `PATH`.
+</Tip>
+
+## Cursor
+
+Cursor reads MCP servers from `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in the workspace root (project-scoped):
+
+```json
+{
+  "mcpServers": {
+    "corebase": {
+      "command": "/usr/local/bin/coremcp",
+      "args": ["serve", "--config", "/etc/coremcp/coremcp.yaml"]
+    }
+  }
+}
+```
+
+Reload Cursor — the agent shows up in the Composer's tool list.
+
+## Continue
+
+For [Continue](https://continue.dev), add CoreMCP under `mcpServers` in `~/.continue/config.yaml`:
+
+```yaml
+mcpServers:
+  - name: corebase
+    command: /usr/local/bin/coremcp
+    args:
+      - serve
+      - --config
+      - /etc/coremcp/coremcp.yaml
+```
+
+Reload the Continue extension in your editor.
+
+## Zed
+
+Zed's MCP support uses the same JSON shape:
+
+```json
+{
+  "context_servers": {
+    "corebase": {
+      "command": {
+        "path": "/usr/local/bin/coremcp",
+        "args": ["serve", "--config", "/etc/coremcp/coremcp.yaml"]
+      }
+    }
+  }
+}
+```
+
+Add this to your Zed settings (Cmd+,).
+
+## HTTP transport (remote clients)
+
+For clients that connect over the network — including CoreBase Cloud — run CoreMCP with `transport: http` in `coremcp.yaml` and listen on a port:
+
+```yaml
+server:
+  transport: http
+  port: 8080
+```
+
+Start with `coremcp serve` (as a long-running service via [systemd](/coremcp/install#systemd-linux-daemon) or [Docker Compose](/coremcp/install#docker)). Point your remote client at `http://your-host:8080`.
+
+<Note>
+  Expose HTTP transport only inside trusted networks. There's no built-in TLS or auth — terminate TLS at a reverse proxy (Caddy, nginx, Cloudflare Tunnel) and add network-level ACLs.
+</Note>
+
+## Verifying
+
+Once your client picks up CoreMCP, the available tools should include:
+
+| Tool | Purpose |
+|---|---|
+| `list_tables` | List tables for a given source |
+| `describe_table` | Column types, FK relationships, comments |
+| `execute_query` | Run a read-only SQL query |
+| `execute_procedure` | Call a stored procedure (only if `readonly: false`) |
+| Custom tools | Anything declared under `tools:` in your YAML |
+
+Ask your client something like: *"List the tables in the erp_prod source."* If the agent is wired correctly, the tool call returns the table list.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Client doesn't see the server | Wrong path to binary, or the config file isn't being loaded — check client logs |
+| Tools appear but every call times out | `coremcp.yaml` DSN unreachable; check with `psql` / `sqlcmd` from the same host |
+| "tool not found: execute_procedure" | Source has `readonly: true` (default). Set `readonly: false` if you need stored procs |
+| Stdio agent dies immediately on launch | Missing config file at the path supplied; check `args` are absolute |

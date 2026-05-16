@@ -81,7 +81,7 @@ For regulated industries — defense, healthcare, banking. Contact sales for the
 
 CoreMCP is open source. Read the [MCP request handlers](https://github.com/corebasehq/coremcp/tree/main/pkg) — query execution is bounded to a small surface and `readonly: true` is the default on every source.
 
-For CoreBase Cloud, the encryption pipeline lives in [`apps/server/src/core/crypto.py`](https://github.com/corebasehq/corebase) — every persisted field with sensitive content runs through `encrypt_message(value, tenant_key)`.
+For CoreBase Cloud, the encryption pipeline derives a per-tenant AES-GCM key from a master key and applies it to every persisted field with sensitive content. The cloud control plane is closed source; security architecture details are available under NDA — contact us if you're evaluating for regulated use.
 
 <Card title="See the source" icon="github" href="https://github.com/corebasehq/coremcp" horizontal>
   Audit the agent's protocol, write your own driver, or vendor the binary into your release process.

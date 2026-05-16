@@ -3,48 +3,70 @@ title: "CoreBase"
 description: "The Corporate Memory Layer for Enterprise AI"
 ---
 
-CoreBase turns the institutional knowledge locked inside your databases, APIs, Slack channels, and email into something your AI agents can talk to — **without moving the data anywhere**.
+CoreBase wires your databases into Claude, Cursor, and any MCP client through a Go agent that runs on your network. MSSQL, REST, GraphQL — schema-aware, read-only by default, zero raw data egress.
 
-Connect your existing systems, set access policies, and let your team query a decade of operational context in natural language.
+## Two ways to start
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Connect a data source and run your first query in 5 minutes.
+  <Card title="CoreMCP — talk to your DB from your editor" icon="terminal" href="/coremcp/intro">
+    Install the open-source Go agent. Configure one YAML file. Point Claude Desktop / Cursor at it. Done.
   </Card>
-  <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    Embed CoreBase in your own product with `cb_live_` tokens.
-  </Card>
-  <Card title="CoreMCP" icon="server" href="/coremcp/intro">
-    Install the local tunnel engine that keeps raw data inside your network.
-  </Card>
-  <Card title="Billing" icon="wallet" href="/platform/billing">
-    Plans, credits, and usage-based pricing.
+  <Card title="CoreBase Cloud — chat, RBAC, audit log" icon="layout-dashboard" href="/quickstart">
+    Hosted panel with Corporate Memory, access policies, embeddable widget, and a Developer REST API.
   </Card>
 </CardGroup>
 
-## What makes CoreBase different
+## The 60-second install
+
+```bash
+# Install
+curl -fsSL https://get.corebasehq.com | sh
+
+# Configure (or use docker)
+cat > coremcp.yaml <<EOF
+sources:
+  - name: erp
+    type: mssql
+    dsn: "sqlserver://core_ro:pass@10.0.0.5:1433?database=ERP&encrypt=disable"
+EOF
+
+# Wire to Claude Desktop
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+# {"mcpServers": {"corebase": {"command": "/usr/local/bin/coremcp", "args": ["serve"]}}}
+```
+
+Open Claude Desktop. Your tables are now tools.
+
+## What CoreBase is for
 
 <CardGroup cols={2}>
-  <Card title="Zero Raw Data Egress" icon="shield-check" href="/concepts/zero-raw-data-egress">
-    Raw rows never leave your network. CoreBase only sees hashed schema metadata over a secure WebSocket tunnel.
+  <Card title="Zero raw data egress" icon="shield-check" href="/concepts/zero-raw-data-egress">
+    Raw rows never leave your network. CoreBase Cloud sees only encrypted schema metadata, RLS-isolated per tenant.
   </Card>
   <Card title="Corporate Memory" icon="brain" href="/concepts/corporate-memory">
     Learns your business vocabulary — "active customer", "pending shipment" — from schema relationships and successful query history.
   </Card>
-  <Card title="Legacy database support" icon="database">
-    MSSQL today (including SQL Server 2000 / 2008 with Turkish_CI_AS collation), Firebird in active development. We speak to the old guard.
+  <Card title="The drivers nobody else ships" icon="database">
+    SQL Server 2000+ with Turkish_CI_AS collation. Firebird (Delphi-era ERPs) in progress. We speak to the old guard.
   </Card>
-  <Card title="Air-gap deployment" icon="lock">
-    Run CoreBase entirely inside your perimeter — Docker / Kubernetes, no outbound network required.
+  <Card title="Three deployment tiers" icon="server">
+    Cloud-relay (managed) · Self-hosted (your VPC) · Air-gap (Enterprise Container) — same protocol, different perimeter.
   </Card>
 </CardGroup>
 
-## How it works
+## Reference
 
-1. **Install CoreMCP** on your own server — a small Go binary that connects to your databases.
-2. **Connect to CoreBase** over an outbound-only WebSocket. We only see schema metadata.
-3. **Query in natural language** from the panel, embedded widget, or the Developer API.
-
-<Card title="See the full security model" icon="shield" href="/concepts/zero-raw-data-egress" horizontal>
-  Read why raw rows physically cannot leave your network.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Install" icon="download" href="/coremcp/install">
+    `curl | sh`, Docker, source, systemd, air-gap.
+  </Card>
+  <Card title="Configuration" icon="file-code" href="/coremcp/configuration">
+    Every YAML field, every option, with examples.
+  </Card>
+  <Card title="MCP clients" icon="plug" href="/coremcp/clients">
+    Claude Desktop, Cursor, Continue, Zed config snippets.
+  </Card>
+  <Card title="Developer API" icon="code" href="/api-reference/introduction">
+    `POST /v1/chat` — embed CoreBase in your product with `cb_live_` tokens.
+  </Card>
+</CardGroup>
