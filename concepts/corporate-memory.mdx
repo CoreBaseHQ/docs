@@ -1,57 +1,69 @@
 ---
 title: "Corporate Memory"
-description: "How CoreBase learns your business vocabulary without ever seeing the raw data."
+description: "How CoreBase grounds the agent in your business vocabulary — annotations, glossary, and live retrieval."
 ---
 
 Every company has its own dictionary. "Active customer" might mean *logged in this quarter* in one team and *paid an invoice this month* in another. Off-the-shelf AI doesn't know your dictionary — Corporate Memory does.
 
-## What gets remembered
+## What Corporate Memory is
 
-Corporate Memory is built from two signals, **neither of which contains raw data**:
+Corporate Memory is the layer between your data and the agent. Three pieces work together:
 
 <CardGroup cols={2}>
-  <Card title="Schema relationships">
-    Table names, column names, foreign keys, indexes. Hashed and stored encrypted per tenant.
+  <Card title="Schema annotations">
+    Pin business meaning to columns and tables: `flag_2_new = cancellation flag, 1 = Active, 0 = Cancelled`. Stored encrypted per tenant.
   </Card>
-  <Card title="Successful query history">
-    Which queries answered which questions. Stored as redacted query templates plus the natural-language intent that produced them.
+  <Card title="Business glossary">
+    Tenant-wide terms: "MRR", "VIP customer", "active subscription" — each mapped to a definition and (optionally) the SQL pattern that computes it.
+  </Card>
+  <Card title="Live retrieval">
+    Slack threads, Microsoft 365 emails, and other ingested context are embedded per tenant and retrieved at query time.
+  </Card>
+  <Card title="Schema relationships">
+    Foreign-key hints and virtual relationships you've declared in the panel — used by the agent to write correct joins, even when the legacy DB has no FK constraints.
   </Card>
 </CardGroup>
 
-No row values. No customer names. No transaction amounts. Just structure and intent.
+None of this contains raw row data. Annotations describe meaning; retrieval returns chunks from ingested documents, not your transactional database.
 
-## What it produces
+## How the agent uses it
 
-Over time, Corporate Memory builds a per-tenant glossary:
+Every chat request builds a per-tenant context bundle:
 
-- **Concept → SQL pattern** — "active customer" maps to `customers WHERE last_login > now() - interval '30 days'` in your schema, even though the column is called `son_giris_tarihi`.
-- **Concept → table joins** — "order with shipping" knows to join `orders` × `shipments` × `addresses` because that's how your team historically queried it.
-- **Domain-specific aliases** — "müşteri", "client", "abone" all collapse into the same concept once the team uses them interchangeably.
+1. Active schema annotations and glossary terms for the connected sources are injected into the agent's tool descriptions and system prompt.
+2. If the prompt mentions concepts (`MRR`, `VIP customer`), the glossary entry is surfaced before SQL generation.
+3. Relevant document chunks from Slack / M365 retrieval are added to the prompt with citations.
+4. The agent picks the right tool, writes the right SQL, and answers grounded in your data.
 
-The model gets this context injected as part of the system prompt before generating SQL. You don't have to teach it — it watches and updates.
-
-## Per-tenant isolation
-
-Corporate Memory is **strictly tenant-scoped**. Two organizations using CoreBase build two independent glossaries — no cross-tenant leakage, no shared training. PostgreSQL row-level security enforces the isolation at the database layer.
-
-## Plan availability
-
-<Card title="Free plan" icon="lock" horizontal>
-  **Disabled.** No retrieval, no glossary lookup — the model runs on raw schema names only.
-</Card>
-
-<Card title="Pro / Team / Enterprise" icon="check" horizontal>
-  Adaptive memory enabled. Glossary learns from successful queries and is injected into every prompt.
-</Card>
-
-<Tip>
-  Corporate Memory improves as your team uses it — the more queries it sees, the more accurate the generated SQL becomes.
-</Tip>
+The model gets your business context as part of every call — it doesn't have to guess what `flag_2_new` means or invent a definition of `MRR`.
 
 ## What you control
 
 In the panel under **Semantic Layer**:
 
-- **Annotations** — pin a concept manually ("VIP customer = customers.tier IN ('gold','platinum')") instead of waiting for the model to learn it.
-- **Glossary** — view, edit, or delete learned terms.
-- **Audit** — see exactly when a term was added and which query introduced it.
+- **Annotations** — add an entry per column or table. Include business term, value map (`1 = Active, 0 = Cancelled`), example values, PII flag.
+- **Glossary** — define tenant-wide terms once; every agent call sees them.
+- **Virtual relationships** — declare implicit joins your legacy DB doesn't enforce.
+- **Audit** — see when each entry was added and by whom.
+
+You curate; the agent uses what you've curated.
+
+<Tip>
+  The more you annotate, the more accurate the generated SQL becomes — annotations and glossary terms are the highest-leverage place to spend ten minutes after connecting a new source.
+</Tip>
+
+## Per-tenant isolation
+
+Corporate Memory is strictly tenant-scoped. Two organizations using CoreBase keep two independent annotation sets and glossaries — no cross-tenant reads, no shared training data. Isolation is enforced at the database, not just the application.
+
+## Plan availability
+
+Corporate Memory is **included in every plan** — Free, Pro, Team, and Enterprise. Tier differences are volume (data sources, included monthly usage) and enterprise controls (RBAC, audit log, air-gap), not the memory layer itself.
+
+## Roadmap
+
+- **Suggested annotations** — propose new annotations based on column-name patterns and reused query shapes (planned).
+- **Glossary usage analytics** — surface which terms the agent looked up and how often (planned).
+- **Learned annotations from successful queries** — turn validated queries into reusable patterns (research).
+
+Until those ship, Corporate Memory is curator-driven. The annotations and glossary you add are what the agent sees.

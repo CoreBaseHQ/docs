@@ -102,7 +102,7 @@ The tenant lookup uses `publicId` from the widget option, not a JWT claim — `p
 
 - **Shadow DOM isolation** — widget styles never leak into the host page and vice versa.
 - **DOMPurify sanitization** — markdown rendered from model output is sanitized against XSS before insertion.
-- **TLS 1.2+** for all traffic. Raw row data never crosses the wire — see [Zero Raw Data Egress](/concepts/zero-raw-data-egress).
+- **TLS 1.2+** for all traffic. Data handling depends on your deployment mode — see [Zero Raw Data Egress](/concepts/zero-raw-data-egress) for what crosses the wire in cloud-direct, cloud-relay, self-hosted, and air-gap.
 - **Short-lived JWTs** rejected by CoreBase once expired. Refresh client-side via `getAuthToken`.
 
 ## Going live

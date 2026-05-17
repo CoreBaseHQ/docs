@@ -3,43 +3,54 @@ title: "Zero Raw Data Egress"
 description: "Where your data lives in every CoreBase deployment mode."
 ---
 
-CoreBase is built so your **database credentials never leave your network** and so any data we do see is **isolated per tenant and encrypted at rest**. How tight the perimeter gets depends on your deployment mode.
+CoreBase gives you four ways to connect data to the agent, each with a different perimeter. The strictest mode keeps every row physically inside your network; the lightest pastes a DSN into our panel. Pick the one that matches your compliance posture.
 
-## The two halves
+## The four deployment modes
 
 <CardGroup cols={2}>
-  <Card title="CoreMCP (your server)" icon="server">
-    A Go binary running inside your perimeter. Holds database credentials, opens connections, runs read-only SELECTs.
+  <Card title="Cloud-direct" icon="cloud">
+    Paste a database DSN into the panel. CoreBase Cloud opens the connection, runs read-only queries, returns rows to the LLM. Fastest onboarding; rows traverse the wire.
   </Card>
-  <Card title="CoreBase Cloud (or self-hosted)" icon="cloud">
-    The orchestrator. Holds your account, plans, encrypted schema metadata, chat history, and the LLM glue. Multi-tenant isolated via PostgreSQL Row Level Security.
+  <Card title="Cloud-relay (CoreMCP)" icon="server">
+    CoreMCP agent runs inside your perimeter and holds credentials. CoreBase Cloud orchestrates the chat; rows still cross to the cloud over TLS but credentials never leave your network.
+  </Card>
+  <Card title="Self-hosted" icon="building">
+    Deploy CoreBase + CoreMCP inside your VPC. Rows stay in your network; the LLM call can be routed to a hosted provider or a model you run yourself.
+  </Card>
+  <Card title="Air-gap (Enterprise Container)" icon="lock">
+    The whole stack — CoreBase, CoreMCP, and a local LLM — runs inside the customer perimeter. No outbound network. Raw rows physically cannot leave.
   </Card>
 </CardGroup>
 
-The two halves talk to each other over **Model Context Protocol** — stdio when co-located (Claude Desktop), HTTP / HTTPS otherwise.
-
-## What stays on your server, always
-
-| What | Where | Why |
-|---|---|---|
-| Database credentials | CoreMCP config (your disk) | Never transmitted, ever |
-| Connection pool | CoreMCP process memory | Connections originate inside your network |
-| Direct query plans / cache | CoreMCP process memory | Stays in the agent |
+In every mode, anything CoreBase persists is **encrypted per tenant** and isolated at the database — see the [storage table](#whats-stored-on-the-orchestrator-any-deployment-with-a-cloud-control-plane) below.
 
 ## What CoreBase sees — by deployment mode
 
-### Cloud-relay (managed)
+### Cloud-direct
 
-When the orchestrator is CoreBase Cloud:
+When you paste a DSN into the panel:
+
+| Direction | Payload |
+|---|---|
+| Cloud → Database | Read-only SQL queries opened directly from CoreBase Cloud |
+| Database → Cloud | Result rows, returned to the agent and forwarded to the LLM |
+
+The connection is opened from our infrastructure using credentials you provide. CoreBase enforces read-only at the session level — the database itself refuses mutating SQL, no parser hack required. Credentials are encrypted per tenant before being stored.
+
+This is the fastest path. Use it when your buyer accepts "another SaaS vendor with database access" as part of their compliance model — the same posture you'd accept for any analytics or BI tool you've already onboarded.
+
+### Cloud-relay (CoreMCP-based)
+
+When the orchestrator is CoreBase Cloud and a CoreMCP agent runs in your perimeter:
 
 | Direction | Payload |
 |---|---|
 | Cloud → Agent | Schema-discovery requests, SQL statements, natural-language prompts |
 | Agent → Cloud | Schema metadata, **query result rows**, and the model's final answer |
 
-Rows traverse the wire over TLS 1.2+. They reach our orchestrator and are forwarded to the configured LLM provider (Gemini / OpenAI / Azure). Anything we persist is encrypted with a **per-tenant AES-GCM key**, and PostgreSQL Row Level Security prevents cross-tenant reads even with database-level access.
+Database credentials live on the CoreMCP agent and never reach our cloud. Connections originate inside your network. Rows still traverse the wire over TLS 1.2+ to reach the LLM. Anything CoreBase persists is encrypted per tenant.
 
-This is the cheapest, fastest mode. Use it when "CoreBase as a SaaS vendor" fits your compliance model — same posture you'd accept for any LLM API provider.
+Use this mode when credentials staying on-prem is a hard requirement but rows in transit (under TLS) are acceptable.
 
 ### Self-hosted
 
@@ -59,21 +70,23 @@ The strictest mode:
 
 For regulated industries — defense, healthcare, banking. Contact sales for the Enterprise Container bundle.
 
-## What's stored on the orchestrator (any deployment)
+## What's stored on the orchestrator (any deployment with a cloud control plane)
 
-| Data | Encryption | Cross-tenant access? |
+| Data | Encryption | Cross-tenant access |
 |---|---|---|
-| Hashed schema metadata | AES-GCM, per-tenant key | Blocked by RLS |
-| Chat transcripts (prompts + answers) | AES-GCM, per-tenant key | Blocked by RLS |
-| Audit log (who asked what, which policies fired) | AES-GCM, per-tenant key | Blocked by RLS |
-| Corporate Memory (concepts → SQL patterns) | AES-GCM, per-tenant key | Blocked by RLS |
-| Database credentials | — | **Never stored** |
+| Schema metadata | Per-tenant key, encrypted at rest | Sealed at the database |
+| Chat transcripts (prompts + answers) | Per-tenant key, encrypted at rest | Sealed at the database |
+| Audit log (who asked what, which policies fired) | Per-tenant key, encrypted at rest | Sealed at the database |
+| Corporate Memory (annotations + glossary) | Per-tenant key, encrypted at rest | Sealed at the database |
+| Database credentials (cloud-direct mode) | Per-tenant key, encrypted at rest | Sealed at the database |
+| Database credentials (cloud-relay / self-host / air-gap) | — | Stored on CoreMCP, never on the orchestrator |
 
 ## Compliance posture summary
 
 | Mode | GDPR / KVKK | HIPAA / PCI | Sovereignty |
 |---|---|---|---|
-| **Cloud-relay** | DPA + EU region option | Possible with BAA — contact us | Best-effort |
+| **Cloud-direct** | DPA + EU region option | Same posture as any cloud BI tool | Best-effort |
+| **Cloud-relay** | DPA + EU region option | Possible with BAA — contact us | Credentials on-prem |
 | **Self-hosted** | Your tenancy, your jurisdiction | You hold all keys | Full |
 | **Air-gap** | Zero external footprint | Suitable for restricted networks | Absolute |
 

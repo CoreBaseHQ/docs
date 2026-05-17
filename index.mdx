@@ -1,72 +1,82 @@
 ---
 title: "CoreBase"
-description: "The Corporate Memory Layer for Enterprise AI"
+description: "Memory infrastructure for AI agents your customers use. One API for business memory and per-customer data — production-grade from the first call."
 ---
 
-CoreBase wires your databases into Claude, Cursor, and any MCP client through a Go agent that runs on your network. MSSQL, REST, GraphQL — schema-aware, read-only by default, zero raw data egress.
+CoreBase is the managed memory and tool-calling layer for the AI features inside your product. One API for chat, one widget to embed, and a panel where you connect each of your customers' databases — with the schema annotations and glossary that turn raw SQL into answers your customers' teams actually understand.
 
-## Two ways to start
+## Where to start
 
 <CardGroup cols={2}>
-  <Card title="CoreMCP — talk to your DB from your editor" icon="terminal" href="/coremcp/intro">
-    Install the open-source Go agent. Configure one YAML file. Point Claude Desktop / Cursor at it. Done.
+  <Card title="Embed CoreBase in your product" icon="layout-dashboard" href="/quickstart">
+    The B2D path. Get a `cb_live_` token, connect each customer's database from the panel, and call `POST /v1/chat` (or drop in the widget). Hosted, audited, billed per token.
   </Card>
-  <Card title="CoreBase Cloud — chat, RBAC, audit log" icon="layout-dashboard" href="/quickstart">
-    Hosted panel with Corporate Memory, access policies, embeddable widget, and a Developer REST API.
+  <Card title="Run CoreMCP on your own server" icon="terminal" href="/coremcp/intro">
+    The self-host path. Install the open-source Go agent, configure one YAML, and wire it into Claude Desktop, Cursor, or your CoreBase deployment. For internal-use and air-gap scenarios.
   </Card>
 </CardGroup>
 
-## The 60-second install
+## The 60-second tour
+
+Embed into your product:
 
 ```bash
-# Install
+# 1. Get a key
+export COREBASE_API_KEY=cb_live_a1b2c3...
+
+# 2. Connect a customer's database in the panel
+#    (Sources → Add → Postgres → paste DSN)
+
+# 3. Ask
+curl -N -X POST https://api.corebasehq.com/v1/chat \
+  -H "Authorization: Bearer $COREBASE_API_KEY" \
+  -d '{"messages":[{"role":"user","content":"Top 5 customers by revenue this quarter?"}]}'
+```
+
+Self-host the agent:
+
+```bash
 curl -fsSL https://get.corebasehq.com | sh
 
-# Configure (or use docker)
 cat > coremcp.yaml <<EOF
 sources:
   - name: erp
     type: mssql
     dsn: "sqlserver://core_ro:pass@10.0.0.5:1433?database=ERP&encrypt=disable"
+    readonly: true
 EOF
-
-# Wire to Claude Desktop
-cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
-# {"mcpServers": {"corebase": {"command": "/usr/local/bin/coremcp", "args": ["serve"]}}}
 ```
-
-Open Claude Desktop. Your tables are now tools.
 
 ## What CoreBase is for
 
 <CardGroup cols={2}>
-  <Card title="Zero raw data egress" icon="shield-check" href="/concepts/zero-raw-data-egress">
-    Raw rows never leave your network. CoreBase Cloud sees only encrypted schema metadata, RLS-isolated per tenant.
-  </Card>
   <Card title="Corporate Memory" icon="brain" href="/concepts/corporate-memory">
-    Learns your business vocabulary — "active customer", "pending shipment" — from schema relationships and successful query history.
+    Schema annotations + business glossary — the layer that tells the agent `flag_2_new` means "cancellation flag, 1 = Active, 0 = Cancelled" and that `MRR` is computed from active subscriptions.
+  </Card>
+  <Card title="Four deployment modes" icon="server" href="/concepts/zero-raw-data-egress">
+    Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem) · Self-hosted (your VPC) · Air-gap (Enterprise Container).
   </Card>
   <Card title="The drivers nobody else ships" icon="database">
-    SQL Server 2000+ with Turkish_CI_AS collation. Firebird (Delphi-era ERPs) in progress. We speak to the old guard.
+    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). We speak to the old guard.
   </Card>
-  <Card title="Three deployment tiers" icon="server">
-    Cloud-relay (managed) · Self-hosted (your VPC) · Air-gap (Enterprise Container) — same protocol, different perimeter.
+  <Card title="Per-customer by default" icon="shield-check">
+    Each of your customers stays in their own sealed bubble — encrypted with their own key, read-only at the database, audited end-to-end.
   </Card>
 </CardGroup>
 
 ## Reference
 
 <CardGroup cols={2}>
-  <Card title="Install" icon="download" href="/coremcp/install">
-    `curl | sh`, Docker, source, systemd, air-gap.
-  </Card>
-  <Card title="Configuration" icon="file-code" href="/coremcp/configuration">
-    Every YAML field, every option, with examples.
-  </Card>
-  <Card title="MCP clients" icon="plug" href="/coremcp/clients">
-    Claude Desktop, Cursor, Continue, Zed config snippets.
-  </Card>
   <Card title="Developer API" icon="code" href="/api-reference/introduction">
     `POST /v1/chat` — embed CoreBase in your product with `cb_live_` tokens.
+  </Card>
+  <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
+    Drop-in Preact widget for any page in your product. Server-signed JWT auth.
+  </Card>
+  <Card title="CoreMCP install" icon="download" href="/coremcp/install">
+    `curl | sh`, Docker, source, systemd, air-gap bundle.
+  </Card>
+  <Card title="MCP clients" icon="plug" href="/coremcp/clients">
+    Claude Desktop, Cursor, Continue, Zed — config snippets.
   </Card>
 </CardGroup>
