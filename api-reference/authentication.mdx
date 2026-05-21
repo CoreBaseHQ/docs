@@ -30,16 +30,11 @@ The prefix lets you spot tokens at a glance in logs and secret scanners. There i
 | `403` | `Token is disabled` | Toggled off in panel |
 | `403` | `Token expired` | Past `expires_at` |
 | `403` | `Token lacks 'mcp_query' permission` | Permission not granted at creation |
+| `409` | `llm_key_required` | The organization has no LLM provider key configured |
 
 ## Stable identity per token
 
-The Developer API derives a stable user identity from each token:
-
-```
-user_id = "{pass_through_prefix or 'api'}:{token_id[:12]}"
-```
-
-Audit logs group queries by this identity. To track multiple end-users separately, issue one token per end-user (recommended for partner integrations) — see [API tokens → pass-through prefix](/platform/tokens#pass-through-prefix).
+The Developer API derives a stable user identity from each token, so audit logs group queries together per token. To track multiple end-users separately, issue one token per end-user (recommended for partner integrations) — see [API tokens → pass-through prefix](/platform/tokens#pass-through-prefix).
 
 ## Rotating
 

@@ -1,0 +1,78 @@
+---
+title: "LLM keys"
+description: "Bring your own provider API keys. CoreBase routes chat through them."
+---
+
+Every chat call runs against an API key **you** supply — Anthropic, OpenAI, Google Gemini, Groq, Mistral, Azure OpenAI, OpenRouter, or a self-hosted Ollama.
+
+- **The model bill goes to you.** No per-token markup from CoreBase.
+- **You pick the model.** Want Sonnet 4 for analysis, GPT-4o for chat? Add both, set one as default.
+- **You rotate at your pace.** Update the key in the panel; takes effect on the next call.
+
+## Adding a key
+
+In **Settings → LLM provider keys**, click **Add key**.
+
+<Steps>
+  <Step title="Pick a provider">
+    Choose from the dropdown.
+  </Step>
+  <Step title="Paste your API key">
+    The form treats it as a password. Once saved, the value is never displayed again — only the last 4 characters are shown as a recognition hint.
+  </Step>
+  <Step title="(Optional) Pick a model">
+    Each provider has a built-in default. Override with any model the provider exposes.
+  </Step>
+  <Step title="(Optional) Custom base URL">
+    For OpenAI-compatible endpoints (Azure OpenAI, OpenRouter, self-hosted Ollama) drop in the alternate base URL. The field is hidden for providers that use a fixed endpoint.
+  </Step>
+  <Step title="Save">
+    Your first key is promoted to default automatically. Promote a later key via **Set default**.
+  </Step>
+</Steps>
+
+## Default provider
+
+Chat calls run against whichever key is marked **default**. One default per organization; setting a new one demotes the old one automatically.
+
+## Supported providers
+
+| Provider | Default model | Custom base URL |
+|---|---|---|
+| Anthropic Claude | `claude-3-5-sonnet-20241022` | No |
+| OpenAI | `gpt-4o-mini` | Optional |
+| Google Gemini | `gemini-2.0-flash` | No |
+| Groq | `llama-3.3-70b-versatile` | No |
+| Mistral | `mistral-large-latest` | No |
+| Azure OpenAI | `gpt-4o` | Yes |
+| OpenRouter | `openrouter/auto` | Optional |
+| Ollama | `ollama/llama3.1` | Yes |
+
+Need a provider not on this list? Email [support@corebasehq.com](mailto:support@corebasehq.com).
+
+## Multiple keys per organization
+
+You can store one key per provider. Use cases:
+
+- **A/B model testing**: keep both Anthropic and OpenAI keys, switch defaults to compare.
+- **Cost tuning**: a cheap model for chat, a premium model for analytics-heavy work — flip the default before the heavy job.
+- **Multi-region failover**: an Azure key per region, swap defaults when one is unavailable.
+
+## Rotating a key
+
+In the table, edit the row and paste the new value. New chat calls use the new key from the next request onward.
+
+If the old key was compromised, **revoke it at the provider first** (their dashboard is the source of truth), then update CoreBase.
+
+## Security
+
+API keys are encrypted at rest, scoped per organization, and decrypted only in memory during a chat call. Plaintext keys are never written to logs or returned in any API response.
+
+## Errors
+
+| HTTP | Cause | Fix |
+|---|---|---|
+| `409` | No active LLM key configured | Add one in Settings → LLM keys |
+| `4xx` from your provider | Bad key, hit quota, expired payment method | Update in Settings or at the provider |
+
+When your provider rejects a key (auth or quota), the chat surfaces a short message pointing to Settings — the raw provider error stays out of the response.

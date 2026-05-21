@@ -1,0 +1,66 @@
+---
+title: "GET /v1/plan"
+description: "Get the subscription plan attached to your token's organization."
+---
+
+Returns the current subscription tier and status for the organization the calling `cb_live_` token belongs to. Useful for gating features in your UI.
+
+## Request
+
+```http
+GET /v1/plan HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+No body, no query parameters.
+
+## Response
+
+```json
+{
+  "plan": "pro",
+  "status": "active"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `plan` | `"free" \| "pro" \| "team" \| "enterprise"` | Current subscription tier |
+| `status` | `string` | Stripe subscription status: `active`, `trialing`, `past_due`, `unpaid`, `canceled`, `incomplete` |
+
+## Errors
+
+Standard authentication errors apply — see [Authentication → Errors](/api-reference/authentication#errors).
+
+## Examples
+
+### Gate a Pro-only feature
+
+```js
+const res = await fetch("https://api.corebasehq.com/v1/plan", {
+  headers: { Authorization: `Bearer ${process.env.CB_LIVE}` },
+});
+const { plan } = await res.json();
+if (plan === "free") {
+  ui.showUpgradePrompt();
+}
+```
+
+### Block requests if subscription lapsed
+
+```python
+import httpx
+
+def is_active(token: str) -> bool:
+    r = httpx.get(
+        "https://api.corebasehq.com/v1/plan",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    r.raise_for_status()
+    return r.json()["status"] in {"active", "trialing"}
+```
+
+## Caching
+
+Plan changes via Stripe webhook on subscription create/update/delete events. Safe to cache for ~60 seconds.

@@ -41,6 +41,7 @@
             "group": "Account",
             "pages": [
               "platform/intro",
+              "platform/llm-keys",
               "platform/billing",
               "platform/tokens"
             ]
@@ -87,7 +88,7 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/endpoints/chat",
-              "api-reference/endpoints/credits"
+              "api-reference/endpoints/plan"
             ]
           },
           {

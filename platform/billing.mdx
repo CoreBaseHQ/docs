@@ -1,21 +1,21 @@
 ---
 title: "Billing"
-description: "Plans, prepaid balance, top-ups, and usage."
+description: "Subscription tiers and Stripe-managed plan changes."
 ---
 
-CoreBase uses a **prepaid credit model** — your balance is in real US dollars, and each query deducts based on tokens consumed. Subscriptions grant a monthly included-usage allowance; top-ups add to a balance that never expires.
+CoreBase charges a flat monthly subscription. LLM calls run against your own provider API keys ([Bring Your Own Key](/platform/llm-keys)) — no per-token markup from us.
 
 ## Plans
 
 <CardGroup cols={2}>
   <Card title="Free" icon="bolt">
-    **$0/month** · $1 one-time trial credit · 1 data source · Corporate Memory included · Top-ups available
+    **$0/month** · 1 data source · Corporate Memory · Bring your own LLM keys
   </Card>
   <Card title="Pro" icon="crown">
-    **$49/month** · $20 usage included · Unlimited data sources · Corporate Memory included · Top-ups available
+    **$49/month** · Up to 5 data sources · Corporate Memory · Cloud relay · Bring your own LLM keys
   </Card>
   <Card title="Team" icon="users">
-    **$149/month** · $50 usage included · Unlimited data sources · Audit Log + RBAC · Top-ups available
+    **$149/month** · Unlimited data sources · Audit Log + RBAC · Bring your own LLM keys
   </Card>
   <Card title="Enterprise" icon="building">
     Custom · Air-gap deployment · SLA · Yearly contract · Contact sales
@@ -24,31 +24,21 @@ CoreBase uses a **prepaid credit model** — your balance is in real US dollars,
 
 Corporate Memory — the schema annotations and business glossary that ground the agent in your data — is included in every plan. Tier differences are volume (data sources) and enterprise controls (RBAC, audit log, air-gap).
 
-## How charges work
+## What you pay for
 
 | Resource | Cost |
 |---|---|
-| Tokens (input + output) | $3 per million tokens |
-| Subscription seat | Flat monthly fee (Pro / Team) |
-| Top-up purchase | Custom amount, $5–$200, 1:1 USD → credit |
+| Platform subscription | Flat monthly fee (Pro / Team) |
+| LLM tokens | Billed by your provider, not by CoreBase |
+| Data sources | Included in plan |
 
-A typical "small" question (~1,000 tokens roundtrip) costs about **$0.003**. A complex analytical query with retrieval and synthesis can be **$0.02–$0.05**.
+## Starting a subscription
 
-## Deduction order
+In **Billing → Plans**, click **Switch to Pro** or **Switch to Team**. You're redirected to Stripe-hosted checkout. Once paid, your plan flips within a few seconds.
 
-When a query consumes credit:
-
-1. The cost comes out of your **monthly grant** first (the allowance from your active subscription).
-2. If that runs out, it spills into your **top-up balance** (never expires).
-3. If both are empty, the API returns `402 Payment Required` and the panel surfaces an upgrade prompt.
-
-<Tip>
-  Top-up credits **never expire** and survive subscription cancellation. Monthly grants reset every billing cycle.
-</Tip>
-
-## Adding balance
-
-In **Billing → Add Credits**, enter any amount between **$5 and $200**. You're redirected to a Stripe-hosted checkout. Once paid, your balance updates within a few seconds via webhook. The exact amount you paid (minus Stripe fees, on our side) is credited 1:1 to your top-up balance.
+<Note>
+  You can use the Free plan indefinitely, as long as you stay within its limits. Upgrade when you need more sources, audit logging, or RBAC.
+</Note>
 
 ## Managing your subscription
 
@@ -59,10 +49,6 @@ Click **Manage subscription** in the billing page to open the Stripe Customer Po
 - Cancel (you keep access until the period end)
 - Download invoices
 
-## Usage analytics
-
-Per-query usage is also forwarded to Stripe's metered usage system as a `corebase.tokens.consumed` event tied to your customer ID. This means token usage shows up on your Stripe dashboard alongside the prepaid charges — no surprises on the invoice.
-
 ## Refunds
 
-Top-up credits are non-refundable once the Stripe charge clears, but unused balance never expires. Subscription cancellations take effect at the end of the current period — no proration.
+Subscription cancellations take effect at the end of the current period — no proration.

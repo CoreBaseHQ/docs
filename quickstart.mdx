@@ -58,7 +58,9 @@ You need shell access to a server that can reach your database and (optionally) 
 
 ## Add the cloud layer (optional)
 
-Want a hosted chat UI, RBAC, audit log, Corporate Memory, and the Developer API? Sign up at [corebasehq.com](https://corebasehq.com) — free tier ships with a $1 trial credit.
+Want a hosted chat UI, RBAC, audit log, Corporate Memory, and the Developer API? Sign up at [corebasehq.com](https://corebasehq.com) — the Free plan gets you 1 data source and full access to Corporate Memory.
+
+You'll also need to add your own LLM provider API key in **Settings → LLM keys** before chat works — see [LLM keys](/platform/llm-keys).
 
 The cloud panel orchestrates queries through the same CoreMCP agent. Configure your agent's `transport: http` and connect it from **Sources → Add agent**.
 
@@ -75,6 +77,6 @@ The cloud panel orchestrates queries through the same CoreMCP agent. Configure y
     Restrict who can query which tables — by team, role, or column.
   </Card>
   <Card title="Developer API" icon="terminal" href="/api-reference/introduction">
-    `POST /v1/chat` with `cb_live_` tokens.
+    OpenAI-compatible `POST /v1/chat/completions` with `cb_live_` tokens.
   </Card>
 </CardGroup>

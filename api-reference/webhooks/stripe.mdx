@@ -1,9 +1,9 @@
 ---
 title: "Stripe webhooks"
-description: "How CoreBase ingests billing events from Stripe."
+description: "How CoreBase keeps your subscription plan in sync."
 ---
 
-CoreBase listens to Stripe events on a single endpoint to keep your balance and subscription state in sync. This page is informational — you don't need to configure anything if you're using the managed cloud. If you self-host, set the webhook in your own Stripe account.
+CoreBase listens to Stripe events to keep your plan and subscription status in sync with what you do in the Stripe Customer Portal. This page is informational — if you're using the managed cloud at `corebasehq.com`, nothing to configure. If you self-host, set the webhook in your own Stripe account.
 
 ## Endpoint
 
@@ -13,50 +13,17 @@ POST https://api.corebasehq.com/api/webhooks/stripe
 
 Self-hosted: replace the domain with yours.
 
-## Signature verification
+## Signature
 
-Stripe signs every request with HMAC-SHA256 using the webhook signing secret. CoreBase verifies via `stripe.Webhook.construct_event` — invalid or replayed requests get `401`.
+Stripe signs every request with the webhook signing secret. Invalid or replayed requests are rejected with `401`. Duplicate deliveries are safe — they're treated as no-ops.
 
-## Idempotency
+## Subscription events
 
-Every Stripe event has a unique `evt.id`. CoreBase writes this ID as the `ref_id` on the resulting credit transaction with a `UNIQUE` constraint, so duplicate deliveries are no-ops.
-
-## Events we handle
-
-| Event | What it does |
+| Event | Effect |
 |---|---|
-| `customer.subscription.created` | Sets plan, customer ID, and grants the included monthly usage to the `included` bucket. |
-| `customer.subscription.updated` | Picks up plan changes, `cancel_at_period_end`, status transitions (`trialing`, `past_due`, etc). No grant. |
-| `customer.subscription.deleted` | Final cancellation. Drops the tenant back to `free`. `ends_at` set to now. |
-| `invoice.paid` | Subscription renewal. Tops up the `included` bucket to the plan's monthly grant. |
-| `checkout.session.completed` (mode=`payment`) | One-time top-up purchase. Adds the paid amount (in microdollars) to the `topup` bucket. |
+| `customer.subscription.created` | Activates the chosen plan (Pro / Team) on the organization. |
+| `customer.subscription.updated` | Picks up plan changes and status transitions (`trialing`, `past_due`, etc.). |
+| `customer.subscription.deleted` | Final cancellation. Organization drops back to the Free plan. |
+| `invoice.paid` | Subscription renewal. |
 
-Other events are accepted with `200` but ignored.
-
-## Tenant resolution
-
-Every Stripe object we care about carries an `org_id` in its `metadata` (or `client_reference_id` on the Checkout Session as a fallback). The webhook reads this to find the right tenant — there's no lookup-by-customer-id fragility.
-
-The panel sets this metadata when it creates the Checkout Session:
-
-```python
-stripe.checkout.Session.create(
-    metadata={"org_id": user.org_id},
-    client_reference_id=user.org_id,
-    subscription_data={"metadata": {"org_id": user.org_id}},  # propagates to the subscription
-    ...
-)
-```
-
-## Billing Meter events (outbound)
-
-In addition to receiving webhooks, CoreBase **emits** a Stripe Billing Meter event for every chat call:
-
-```
-event_name:   corebase.tokens.consumed
-payload.value: <total_tokens>
-payload.stripe_customer_id: <customer_id>
-identifier:    chat:<message_id>     # idempotency
-```
-
-This gives you token-level usage analytics in the Stripe dashboard. The prepaid charge happens internally; meter events are purely observability today, with a path to switch to true usage-based billing later.
+Other events return `200` and are ignored.

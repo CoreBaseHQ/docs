@@ -3,12 +3,12 @@ title: "Developer API"
 description: "Embed CoreBase in your product with `cb_live_` tokens."
 ---
 
-The Developer API lets you build natural-language data queries into your own application. Same auth model as the panel, same access policies, same Corporate Memory — wrapped in a small REST surface designed to be easy to call from any backend.
+The Developer API is **OpenAI-compatible**. Point any OpenAI SDK at `https://api.corebasehq.com/v1`, pass a `cb_live_` token, and it just works — chat completions stream in the standard `chat.completion.chunk` SSE format. The model has access to your tenant's data sources, Corporate Memory, and access policies.
 
 ## Base URL
 
 ```
-https://api.corebasehq.com
+https://api.corebasehq.com/v1
 ```
 
 For self-hosted deployments, replace with your CoreBase domain.
@@ -16,27 +16,55 @@ For self-hosted deployments, replace with your CoreBase domain.
 ## What you can do
 
 <CardGroup cols={2}>
-  <Card title="Chat" icon="messages" href="/api-reference/endpoints/chat">
-    Send a conversation history, get a streaming text answer grounded in your data.
+  <Card title="Chat completions" icon="messages" href="/api-reference/endpoints/chat">
+    OpenAI-compatible streaming chat. `POST /v1/chat/completions`.
   </Card>
-  <Card title="Credits" icon="wallet" href="/api-reference/endpoints/credits">
-    Check the remaining balance attached to your token's organization.
-  </Card>
-  <Card title="Webhooks" icon="bolt" href="/api-reference/webhooks/stripe">
-    Stripe billing events that adjust your balance.
+  <Card title="Plan" icon="layers" href="/api-reference/endpoints/plan">
+    Check the subscription tier attached to your token's organization.
   </Card>
 </CardGroup>
 
-## How it differs from the panel API
+## Quick example
 
-The panel uses Clerk JWTs and exposes the full surface — sources, policies, audit, billing. The Developer API uses long-lived `cb_live_` tokens and exposes a deliberately small surface: chat + balance. If you need source management, do it from the panel.
+Using the official OpenAI SDK:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/v1")
+
+stream = client.chat.completions.create(
+    model="corebase",
+    messages=[{"role": "user", "content": "How many active customers last month?"}],
+    stream=True,
+)
+for chunk in stream:
+    print(chunk.choices[0].delta.content or "", end="", flush=True)
+```
+
+Or with `curl`:
+
+```bash
+curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
+  -H "Authorization: Bearer cb_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "corebase",
+    "messages": [{"role": "user", "content": "How many active customers last month?"}],
+    "stream": true
+  }'
+```
+
+## LLM model
+
+You bring your own LLM provider API key — Anthropic, OpenAI, Gemini, Groq, Mistral, Azure OpenAI, OpenRouter, or Ollama. See [LLM keys](/platform/llm-keys) for the panel setup. The `model` field in your request is accepted but ignored; the actual model is whichever provider key you've marked as default.
 
 ## Versioning
 
 The Developer API is versioned at the URL prefix:
 
 ```
-https://api.corebasehq.com/v1/chat
+https://api.corebasehq.com/v1/chat/completions
 ```
 
 We avoid breaking changes within a major version. When `v2` ships, `v1` stays online for at least 12 months with deprecation warnings in the `Sunset` header.
@@ -49,28 +77,14 @@ Each `cb_live_` token has its own per-minute, per-day, and per-month limits conf
 
 | HTTP | Meaning |
 |---|---|
+| 400 | Body schema invalid (e.g. `stream: false`) |
 | 401 | Missing or invalid token |
-| 402 | Insufficient credit balance |
 | 403 | Token lacks the required permission |
+| 409 | No LLM provider key configured for the organization |
 | 429 | Rate limit exceeded |
 | 5xx | Transient server-side issue — safe to retry with exponential backoff |
 
 The body is JSON for any non-2xx response. `4xx`s carry a stable `detail.error` string you can branch on; `5xx`s carry a request ID for support.
-
-## Quick example
-
-```bash
-curl -N -X POST https://api.corebasehq.com/v1/chat \
-  -H "Authorization: Bearer cb_live_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      {"role": "user", "content": "How many active customers last month?"}
-    ]
-  }'
-```
-
-Response is streaming `text/plain` — pipe it straight through to your end-user UI.
 
 ## Next
 
@@ -79,6 +93,6 @@ Response is streaming `text/plain` — pipe it straight through to your end-user
     Create tokens, scope permissions, rotate secrets.
   </Card>
   <Card title="Chat endpoint" icon="terminal" href="/api-reference/endpoints/chat">
-    Full request / response spec for `POST /v1/chat`.
+    Full request / response spec for `POST /v1/chat/completions`.
   </Card>
 </CardGroup>

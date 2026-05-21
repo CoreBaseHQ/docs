@@ -8,8 +8,8 @@ CoreBase is the managed memory and tool-calling layer for the AI features inside
 ## Where to start
 
 <CardGroup cols={2}>
-  <Card title="Embed CoreBase in your product" icon="layout-dashboard" href="/quickstart">
-    The B2D path. Get a `cb_live_` token, connect each customer's database from the panel, and call `POST /v1/chat` (or drop in the widget). Hosted, audited, billed per token.
+  <Card title="Embed CoreBase in your product" icon="code" href="/quickstart">
+    The B2D path. Get a `cb_live_` token, add your LLM provider key, connect each customer's database from the panel, and call `POST /v1/chat/completions` — or drop in the widget.
   </Card>
   <Card title="Run CoreMCP on your own server" icon="terminal" href="/coremcp/intro">
     The self-host path. Install the open-source Go agent, configure one YAML, and wire it into Claude Desktop, Cursor, or your CoreBase deployment. For internal-use and air-gap scenarios.
@@ -21,16 +21,24 @@ CoreBase is the managed memory and tool-calling layer for the AI features inside
 Embed into your product:
 
 ```bash
-# 1. Get a key
+# 1. Get a CoreBase API token
 export COREBASE_API_KEY=cb_live_a1b2c3...
 
-# 2. Connect a customer's database in the panel
+# 2. Add your own LLM provider key in the panel
+#    (Settings → LLM keys → paste Anthropic/OpenAI/Gemini key)
+
+# 3. Connect a customer's database in the panel
 #    (Sources → Add → Postgres → paste DSN)
 
-# 3. Ask
-curl -N -X POST https://api.corebasehq.com/v1/chat \
+# 4. Ask — OpenAI-compatible streaming response
+curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
   -H "Authorization: Bearer $COREBASE_API_KEY" \
-  -d '{"messages":[{"role":"user","content":"Top 5 customers by revenue this quarter?"}]}'
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "corebase",
+    "messages": [{"role":"user","content":"Top 5 customers by revenue this quarter?"}],
+    "stream": true
+  }'
 ```
 
 Self-host the agent:
@@ -68,7 +76,7 @@ EOF
 
 <CardGroup cols={2}>
   <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    `POST /v1/chat` — embed CoreBase in your product with `cb_live_` tokens.
+    OpenAI-compatible `POST /v1/chat/completions` — embed CoreBase in your product with `cb_live_` tokens.
   </Card>
   <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
     Drop-in Preact widget for any page in your product. Server-signed JWT auth.

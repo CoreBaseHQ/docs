@@ -32,21 +32,25 @@ The web panel at [corebasehq.com/panel](https://corebasehq.com/panel) is where y
   <Card title="API Tokens" icon="key" href="/platform/tokens">
     Issue `cb_live_` tokens for the Developer API. Pro plan and above.
   </Card>
+  <Card title="LLM keys" icon="cpu" href="/platform/llm-keys">
+    Add your own Anthropic, OpenAI, Gemini, Groq, Mistral, Azure, OpenRouter, or Ollama key. CoreBase runs every chat through it.
+  </Card>
   <Card title="Team" icon="users">
     Invite members, manage roles, set user attributes.
   </Card>
   <Card title="Billing" icon="wallet" href="/platform/billing">
-    Plan, balance, top-ups, invoices.
+    Subscription plan and Stripe customer portal.
   </Card>
 </CardGroup>
 
 ## Onboarding
 
-Brand-new organizations are walked through a 3-step setup the first time they sign in:
+Brand-new organizations are walked through a short setup the first time they sign in:
 
-1. **Connect a source** — paste a Postgres DSN, register a CoreMCP agent (MSSQL / Firebird), wire a REST or GraphQL API, or hook up Slack / Microsoft 365 ingestion. Whichever your first customer needs.
-2. **Set a starter policy** — pick a recipe (e.g. *lock #finance to admins*).
-3. **Done** — land on the dashboard.
+1. **Add an LLM key** — paste your Anthropic, OpenAI, Gemini, or other provider API key. Chat won't work without one.
+2. **Connect a source** — paste a Postgres DSN, register a CoreMCP agent (MSSQL / Firebird), wire a REST or GraphQL API, or hook up Slack / Microsoft 365 ingestion.
+3. **Set a starter policy** — pick a recipe (e.g. *lock #finance to admins*).
+4. **Done** — land on the dashboard.
 
 You can re-run any step from the corresponding page in the sidebar.
 
