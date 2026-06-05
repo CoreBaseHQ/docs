@@ -3,7 +3,7 @@ title: "What is CoreMCP?"
 description: "The Go binary that keeps your raw data inside your network."
 ---
 
-CoreMCP is the **local half** of CoreBase. It's a single Go binary that runs on a server inside your perimeter, holds your database credentials, and executes queries locally. CoreBase talks to it over the [Model Context Protocol](https://modelcontextprotocol.io) — either directly (Claude Desktop, MCP-aware clients) or through CoreBase Cloud as a relay.
+CoreMCP is the **on-prem half** of CoreBase. It's a single Go binary that runs on a server inside your perimeter, holds your database credentials, and executes queries inside your network. CoreBase talks to it over the [Model Context Protocol](https://modelcontextprotocol.io) — either directly (Claude Desktop, MCP-aware clients) or through CoreBase Cloud as a relay.
 
 ```
 ┌──────────────────────────────────────┐        ┌────────────────────┐

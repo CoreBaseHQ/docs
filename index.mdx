@@ -1,47 +1,24 @@
 ---
 title: "CoreBase"
-description: "Memory infrastructure for AI agents your customers use. One API for business memory and per-customer data — production-grade from the first call."
+description: "Connect AI agents to the legacy SQL Server, on-prem ERP, and air-gapped databases other tools can't reach — read-only by default, per-tenant isolated, audited end-to-end."
 ---
 
-CoreBase is the managed memory and tool-calling layer for the AI features inside your product. One API for chat, one widget to embed, and a panel where you connect each of your customers' databases — with the schema annotations and glossary that turn raw SQL into answers your customers' teams actually understand.
+CoreBase connects AI agents to the databases nobody else can reach. The old SQL Server behind a firewall, the Firebird file under a Delphi ERP, the air-gapped network an auditor won't let you open — CoreBase reaches them over the [Model Context Protocol](https://modelcontextprotocol.io), keeps queries read-only, and never moves raw rows out of your perimeter unless you choose to.
 
 ## Where to start
 
 <CardGroup cols={2}>
-  <Card title="Embed CoreBase in your product" icon="code" href="/quickstart">
-    The B2D path. Get a `cb_live_` token, add your LLM provider key, connect each customer's database from the panel, and call `POST /v1/chat/completions` — or drop in the widget.
-  </Card>
   <Card title="Run CoreMCP on your own server" icon="terminal" href="/coremcp/intro">
-    The self-host path. Install the open-source Go agent, configure one YAML, and wire it into Claude Desktop, Cursor, or your CoreBase deployment. For internal-use and air-gap scenarios.
+    The open-source Go agent. Install it on a machine that can reach your database, configure one YAML, and wire it into Claude Desktop, Cursor, or CoreBase Cloud. Outbound 443 only — no inbound ports.
+  </Card>
+  <Card title="Connect from the CoreBase panel" icon="layout-dashboard" href="/platform/intro">
+    The managed path. Add a data source, set access policies, and get the audit log, RBAC, and Query Memory layer on top — without running anything yourself.
   </Card>
 </CardGroup>
 
 ## The 60-second tour
 
-Embed into your product:
-
-```bash
-# 1. Get a CoreBase API token
-export COREBASE_API_KEY=cb_live_a1b2c3...
-
-# 2. Add your own LLM provider key in the panel
-#    (Settings → LLM keys → paste Anthropic/OpenAI/Gemini key)
-
-# 3. Connect a customer's database in the panel
-#    (Sources → Add → Postgres → paste DSN)
-
-# 4. Ask — OpenAI-compatible streaming response
-curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
-  -H "Authorization: Bearer $COREBASE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "corebase",
-    "messages": [{"role":"user","content":"Top 5 customers by revenue this quarter?"}],
-    "stream": true
-  }'
-```
-
-Self-host the agent:
+Run the agent inside your network:
 
 ```bash
 curl -fsSL https://get.corebasehq.com | sh
@@ -55,20 +32,40 @@ sources:
 EOF
 ```
 
+Or call CoreBase from your own apps with an OpenAI-compatible endpoint:
+
+```bash
+# 1. Get a CoreBase API token (Settings → Developer)
+export COREBASE_API_KEY=cb_live_a1b2c3...
+
+# 2. Add your own LLM provider key in the panel
+#    (Settings → LLM keys → paste Anthropic/OpenAI/Gemini key)
+
+# 3. Ask — OpenAI-compatible streaming response
+curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
+  -H "Authorization: Bearer $COREBASE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "corebase",
+    "messages": [{"role":"user","content":"Top 5 customers by revenue this quarter?"}],
+    "stream": true
+  }'
+```
+
 ## What CoreBase is for
 
 <CardGroup cols={2}>
-  <Card title="Corporate Memory" icon="brain" href="/concepts/corporate-memory">
-    Schema annotations + business glossary — the layer that tells the agent `flag_2_new` means "cancellation flag, 1 = Active, 0 = Cancelled" and that `MRR` is computed from active subscriptions.
+  <Card title="The drivers nobody else ships" icon="database" href="/coremcp/intro">
+    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). CoreBase speaks to the old guard other tools refuse to touch.
   </Card>
-  <Card title="Four deployment modes" icon="server" href="/concepts/zero-raw-data-egress">
-    Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem) · Self-hosted (your VPC) · Air-gap (Enterprise Container).
+  <Card title="Reaches behind the firewall" icon="server" href="/concepts/zero-raw-data-egress">
+    Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem, outbound only) · Self-hosted (your VPC) · Air-gap (Enterprise Container). Pick the egress posture your compliance needs.
   </Card>
-  <Card title="The drivers nobody else ships" icon="database">
-    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). We speak to the old guard.
+  <Card title="Query Memory" icon="brain" href="/concepts/corporate-memory">
+    Schema annotations + business glossary tell the agent that `flag_2_new` means "cancellation flag, 1 = Active, 0 = Cancelled" and that `MRR` is computed from active subscriptions. It learns your data model without touching raw rows.
   </Card>
-  <Card title="Per-customer by default" icon="shield-check">
-    Each of your customers stays in their own sealed bubble — encrypted with their own key, read-only at the database, audited end-to-end.
+  <Card title="Isolated per tenant" icon="shield-check">
+    Every tenant stays in its own sealed bubble — encrypted with its own key, read-only at the database, audited end-to-end with PostgreSQL Row Level Security.
   </Card>
 </CardGroup>
 
@@ -76,10 +73,10 @@ EOF
 
 <CardGroup cols={2}>
   <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    OpenAI-compatible `POST /v1/chat/completions` — embed CoreBase in your product with `cb_live_` tokens.
+    OpenAI-compatible `POST /v1/chat/completions` — call CoreBase from your own apps with `cb_live_` tokens.
   </Card>
   <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
-    Drop-in Preact widget for any page in your product. Server-signed JWT auth.
+    Drop-in Preact widget for any page. Server-signed JWT auth.
   </Card>
   <Card title="CoreMCP install" icon="download" href="/coremcp/install">
     `curl | sh`, Docker, source, systemd, air-gap bundle.
