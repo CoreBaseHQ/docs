@@ -5,7 +5,7 @@ description: "OpenAI-compatible streaming chat completions."
 
 The chat endpoint is OpenAI-compatible — point any OpenAI SDK at `https://api.corebasehq.com/v1` and it just works. Responses stream as `text/event-stream` using the standard `chat.completion.chunk` payload, terminated by `data: [DONE]`.
 
-The model has access to your tenant's data sources, Corporate Memory, and audit policies — no extra setup per call.
+The model has access to your tenant's data sources, Unified Context, and audit policies — no extra setup per call.
 
 <Note>
   `POST /v1/chat/completions` is the canonical path. The legacy `POST /v1/chat` is kept as an alias for backward compatibility and behaves identically.

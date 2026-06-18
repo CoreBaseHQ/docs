@@ -14,8 +14,12 @@
 
 ## Terminology
 
-<!-- Add product-specific terms and preferred usage -->
-<!-- Example: Use "workspace" not "project", "member" not "user" -->
+- CoreBase is a **governed agent platform for enterprise data** — lead with agents (autonomous + proactive + multi-step flows). Legacy/on-prem/air-gap **reach** is the moat (why it's defensible), not the headline.
+- Use **"Unified Context"** or **"Query Memory"**, not "Corporate Memory".
+- Use **"agent" / "agent flow" / "step"**, not "workflow automation" generically. A flow is a DAG of trigger → agent/action nodes.
+- **"data-sovereign" / "network-safe"**, never "local-first".
+- CoreMCP = the open-source, on-prem, zero-trust bridge (sovereign tier). Nango-backed SaaS connectors = cloud-relay tier. Keep the two tiers distinct.
+- Be honest about status: approval gates/budgets/kill-switch, notify actions, event-subtype filtering, and SaaS RAG ingestion are **roadmap** — mark them as such, don't imply they ship today.
 
 ## Style preferences
 

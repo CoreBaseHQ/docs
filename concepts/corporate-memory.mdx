@@ -1,47 +1,49 @@
 ---
-title: "Corporate Memory"
-description: "How CoreBase grounds the agent in your business vocabulary — annotations, glossary, and live retrieval."
+title: "Unified Context"
+description: "How CoreBase grounds agents in your business — schema annotations, a glossary, live retrieval, and Query Memory that sharpens over time."
 ---
 
-Every company has its own dictionary. "Active customer" might mean *logged in this quarter* in one team and *paid an invoice this month* in another. Off-the-shelf AI doesn't know your dictionary — Corporate Memory does.
+Every company has its own dictionary. "Active customer" might mean *logged in this quarter* in one team and *paid an invoice this month* in another. Off-the-shelf AI doesn't know your dictionary — Unified Context does. It's the layer between your data and your agents that makes generated SQL and tool calls correct instead of plausible.
 
-## What Corporate Memory is
-
-Corporate Memory is the layer between your data and the agent. Three pieces work together:
+## What's in it
 
 <CardGroup cols={2}>
   <Card title="Schema annotations">
     Pin business meaning to columns and tables: `flag_2_new = cancellation flag, 1 = Active, 0 = Cancelled`. Stored encrypted per tenant.
   </Card>
   <Card title="Business glossary">
-    Tenant-wide terms: "MRR", "VIP customer", "active subscription" — each mapped to a definition and (optionally) the SQL pattern that computes it.
+    Tenant-wide terms — "MRR", "VIP customer", "active subscription" — each mapped to a definition and (optionally) the SQL pattern that computes it.
+  </Card>
+  <Card title="Query Memory">
+    Validated question→SQL pairs the agent has gotten right before, retrieved as few-shot examples on the next similar question. The more it runs, the sharper the SQL — isolated per tenant.
   </Card>
   <Card title="Live retrieval">
-    Slack threads, Microsoft 365 emails, and other ingested context are embedded per tenant and retrieved at query time.
+    Slack threads, Microsoft 365 emails, and other ingested context are embedded per tenant and retrieved at query time, with citations.
   </Card>
   <Card title="Schema relationships">
-    Foreign-key hints and virtual relationships you've declared in the panel — used by the agent to write correct joins, even when the legacy DB has no FK constraints.
+    Foreign-key hints and virtual relationships you declare in the panel — so the agent writes correct joins even when a legacy DB has no FK constraints.
   </Card>
 </CardGroup>
 
-None of this contains raw row data. Annotations describe meaning; retrieval returns chunks from ingested documents, not your transactional database.
+None of this contains raw row data. Annotations describe meaning; retrieval returns chunks from ingested documents; Query Memory stores query shapes — not your transactional rows.
 
-## How the agent uses it
+## How an agent uses it
 
-Every chat request builds a per-tenant context bundle:
+Every agent request — in chat, in a flow, or via the API — builds a per-tenant context bundle:
 
-1. Active schema annotations and glossary terms for the connected sources are injected into the agent's tool descriptions and system prompt.
-2. If the prompt mentions concepts (`MRR`, `VIP customer`), the glossary entry is surfaced before SQL generation.
-3. Relevant document chunks from Slack / M365 retrieval are added to the prompt with citations.
-4. The agent picks the right tool, writes the right SQL, and answers grounded in your data.
+1. Active annotations and glossary terms for the scoped sources are injected into the agent's tool descriptions and system prompt.
+2. If the prompt mentions a concept (`MRR`, `VIP customer`), the glossary entry is surfaced before SQL generation.
+3. Similar past queries from Query Memory are added as examples.
+4. Relevant document chunks from Slack / M365 retrieval are added with citations.
+5. The agent picks the right tool, writes the right SQL, and answers grounded in your data.
 
-The model gets your business context as part of every call — it doesn't have to guess what `flag_2_new` means or invent a definition of `MRR`.
+The model gets your business context as part of every call — it doesn't guess what `flag_2_new` means or invent a definition of `MRR`.
 
 ## What you control
 
 In the panel under **Semantic Layer**:
 
-- **Annotations** — add an entry per column or table. Include business term, value map (`1 = Active, 0 = Cancelled`), example values, PII flag.
+- **Annotations** — one entry per column or table: business term, value map (`1 = Active, 0 = Cancelled`), example values, PII flag. The schema tree supports filtering and pagination for legacy databases with hundreds of tables.
 - **Glossary** — define tenant-wide terms once; every agent call sees them.
 - **Virtual relationships** — declare implicit joins your legacy DB doesn't enforce.
 - **Audit** — see when each entry was added and by whom.
@@ -49,21 +51,20 @@ In the panel under **Semantic Layer**:
 You curate; the agent uses what you've curated.
 
 <Tip>
-  The more you annotate, the more accurate the generated SQL becomes — annotations and glossary terms are the highest-leverage place to spend ten minutes after connecting a new source.
+  The more you annotate, the more accurate the generated SQL becomes. Annotations and glossary terms are the highest-leverage ten minutes you can spend after connecting a new source.
 </Tip>
 
 ## Per-tenant isolation
 
-Corporate Memory is strictly tenant-scoped. Two organizations using CoreBase keep two independent annotation sets and glossaries — no cross-tenant reads, no shared training data. Isolation is enforced at the database, not just the application.
+Unified Context is strictly tenant-scoped — independent annotation sets, glossaries, memories, and retrieval per organization. No cross-tenant reads, no shared training data. Isolation is enforced at the database with Row-Level Security, not just in the application. See [Governance](/concepts/governance).
 
 ## Plan availability
 
-Corporate Memory is **included in every plan** — Free, Pro, Team, and Enterprise. Tier differences are volume (data sources, included monthly usage) and enterprise controls (RBAC, audit log, air-gap), not the memory layer itself.
+Unified Context is **included in every plan** — Free, Pro, Team, and Enterprise. Tier differences are volume (data sources) and enterprise controls (RBAC, audit, air-gap), not the context layer itself.
 
 ## Roadmap
 
-- **Suggested annotations** — propose new annotations based on column-name patterns and reused query shapes (planned).
-- **Glossary usage analytics** — surface which terms the agent looked up and how often (planned).
-- **Learned annotations from successful queries** — turn validated queries into reusable patterns (research).
+- **Self-healing verification** — automatically detect when an annotation has gone stale against live data (new enum values, dropped columns) and flag it for review.
+- **Suggested annotations** — propose entries from column-name patterns and reused query shapes.
 
-Until those ship, Corporate Memory is curator-driven. The annotations and glossary you add are what the agent sees.
+Until those ship, the annotations and glossary you add are what the agent sees.

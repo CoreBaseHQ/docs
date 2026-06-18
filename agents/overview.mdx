@@ -1,0 +1,68 @@
+---
+title: "Agent platform"
+description: "Build autonomous and proactive AI agents over your data — visually, with read-only governance and durable execution."
+---
+
+The agent platform is where CoreBase goes beyond chat. Instead of asking a question and reading the answer, you build **agents that act**: they explore your schema, write and run queries, call your APIs, and either answer you or take the next step in a flow — on a schedule, on an event, or on demand.
+
+You build them visually in the panel under **Agents** (`Panel → Agents`). No code, no cron syntax, no webhook plumbing.
+
+## The three building blocks
+
+Every agent flow is a graph of nodes you connect with edges.
+
+<CardGroup cols={3}>
+  <Card title="Trigger" icon="bolt">
+    Defines *when* the flow runs — on a schedule, when an event happens, or manually. A flow has one trigger. See [Triggers](/agents/triggers).
+  </Card>
+  <Card title="Agent" icon="robot">
+    An instruction plus the sources it may use. The agent reasons, picks tools, writes SQL or calls APIs, and produces a result.
+  </Card>
+  <Card title="Action" icon="play">
+    A fixed-purpose agent step — a single task described in one line (e.g. "Summarize the rows and flag anything overdue").
+  </Card>
+</CardGroup>
+
+Connect them with edges and you have a flow. The trigger says when; the agent and action nodes say what. See [Flows](/agents/flows) for multi-step graphs.
+
+## How it runs
+
+Agent flows run on **durable execution** — they survive restarts, retry failed steps, and can run for minutes without holding a request open.
+
+| Path | What happens |
+|---|---|
+| **Manual** | Hit **Run** in the builder (or `POST /agent-flows/{id}/run`). The flow starts immediately. |
+| **Scheduled** | A cron schedule you build in the GUI fires the flow on its cadence (UTC). |
+| **Event** | A connected app's event (new Slack message, new Jira issue, incoming webhook) wakes the flow. |
+
+Every run is recorded. Open **Run history** in the builder to watch runs live and inspect each one's output or error.
+
+## Governed by default
+
+Agents inherit the same governance as everything else in CoreBase:
+
+- **Read-only by default.** An agent can only perform writes if the *source* it uses is explicitly opted into writes. See [Governance](/concepts/governance).
+- **Source scoping.** Each agent node is scoped to the sources you pick. It physically cannot reach a source you didn't grant — this is enforced at the tool registry, not by a prompt.
+- **Per-tenant isolation.** Every run executes inside its tenant's Row-Level Security context.
+- **Audited.** Creating, editing, and running flows is recorded in the audit log.
+
+<Note>
+  Autonomous writes are deliberately conservative. Today a source is either read-only or write-enabled. Per-action **approval gates, budgets, and a kill switch** are on the roadmap — until they ship, leave `Allow writes` off for anything you don't fully trust to run unattended.
+</Note>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="The visual builder" icon="workflow" href="/agents/builder">
+    Nodes, edges, configuration, and run history.
+  </Card>
+  <Card title="Triggers" icon="bolt" href="/agents/triggers">
+    Schedules and events — built in the GUI, no cron strings.
+  </Card>
+  <Card title="Flows" icon="diagram-project" href="/agents/flows">
+    Multi-step DAGs with chained context and branching.
+  </Card>
+  <Card title="Connect data" icon="database" href="/connect/sources">
+    Give your agents something to work on.
+  </Card>
+</CardGroup>

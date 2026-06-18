@@ -1,0 +1,71 @@
+---
+title: "Connect your data"
+description: "Point CoreBase at the systems your business runs on — databases, REST and GraphQL APIs — cloud-direct or through the CoreMCP agent."
+---
+
+Agents are only as useful as the data they can reach. CoreBase connects to four kinds of source, each with the egress posture your compliance needs. You manage them all from **Panel → Sources**.
+
+## Databases
+
+| Database | Status | How |
+|---|---|---|
+| **PostgreSQL** | ✅ Cloud-direct | Paste a DSN in the panel |
+| **SQL Server 2000+** | ✅ via CoreMCP | Run the agent on-prem |
+| **Firebird** | 🚧 in development | via CoreMCP |
+| **MySQL / MariaDB** | 🗺 roadmap | via CoreMCP |
+
+### Cloud-direct (paste a DSN)
+
+The fastest path for a reachable database. In **Sources → Add database**, paste a connection string. CoreBase encrypts it per tenant (AES-GCM) and connects directly over TLS.
+
+Connections are **read-only at the session level** — the pool runs with `default_transaction_read_only = on` and a statement timeout. Mutating SQL is rejected by the database itself, not just by a parser. CoreBase auto-exposes four tools: list tables, describe a table (columns, primary key, foreign keys), fuzzy schema search, and run query (with result-size caps).
+
+<Warning>
+  Cloud-direct means query results travel to CoreBase Cloud (encrypted in transit, encrypted at rest). For databases that must never egress, use [CoreMCP](/coremcp/intro) (cloud-relay or air-gap) instead.
+</Warning>
+
+### Legacy & on-prem (via CoreMCP)
+
+For SQL Server, Firebird, and anything behind a firewall, run the open-source [CoreMCP](/coremcp/intro) agent inside your network. It holds the credentials, runs queries locally, and dials outbound only — no inbound ports. See [Connect a database with CoreMCP](/coremcp/connect).
+
+## REST & GraphQL APIs
+
+In **Sources → Add API**, give CoreBase an OpenAPI/Swagger URL (REST) or a GraphQL endpoint. It introspects the spec and turns each operation into a typed tool the agent can call.
+
+- **REST** — operations with an `operationId` become tools; path, query, and body parameters are typed from the spec.
+- **GraphQL** — the schema is introspected; queries become parameterized tools.
+
+APIs are **read-only by default**. Mutating operations (POST/PUT/PATCH/DELETE, GraphQL mutations) are not even exposed to the agent unless you enable writes on the connection — the guard is structural (we don't produce the tool), not a prompt. See [Governance](/concepts/governance).
+
+## Communications
+
+| Source | What it does |
+|---|---|
+| **Slack** | Event subscription with signature verification — messages ingest into [Unified Context](/concepts/corporate-memory) and can trigger agents. |
+| **Microsoft 365** | Mail ingestion via OAuth. |
+
+## SaaS apps
+
+Connect 50+ apps (Jira, Gmail, GitHub, Notion, Stripe, HubSpot, Zendesk…) through managed OAuth — no per-integration code. See [SaaS connectors](/connect/connectors).
+
+## Egress postures at a glance
+
+| Mode | Where rows live | Use when |
+|---|---|---|
+| **Cloud-direct** | Travel to CoreBase Cloud (encrypted) | The DB is reachable and egress is acceptable |
+| **Cloud-relay** | Stay local; CoreMCP runs queries on-prem | Standard for legacy / firewalled DBs |
+| **Self-hosted** | Your VPC | No third-party touch |
+| **Air-gap** | Never leave your perimeter | Defense, healthcare, banking |
+
+See [Zero raw data egress](/concepts/zero-raw-data-egress) for the full breakdown.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="SaaS connectors" icon="plug" href="/connect/connectors">
+    Managed OAuth for 50+ apps.
+  </Card>
+  <Card title="Build an agent" icon="robot" href="/agents/overview">
+    Put your connected sources to work.
+  </Card>
+</CardGroup>

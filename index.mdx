@@ -1,45 +1,67 @@
 ---
 title: "CoreBase"
-description: "Connect AI agents to the legacy SQL Server, on-prem ERP, and air-gapped databases other tools can't reach — read-only by default, per-tenant isolated, audited end-to-end."
+description: "The governed agent platform for enterprise data. Build autonomous and proactive AI agents over the databases, APIs, and apps nobody else can reach — read-only by default, per-tenant isolated, audited end-to-end."
 ---
 
-CoreBase connects AI agents to the databases nobody else can reach. The old SQL Server behind a firewall, the Firebird file under a Delphi ERP, the air-gapped network an auditor won't let you open — CoreBase reaches them over the [Model Context Protocol](https://modelcontextprotocol.io), keeps queries read-only, and never moves raw rows out of your perimeter unless you choose to.
+CoreBase is a **governed agent platform** for enterprise data. You connect your systems — legacy databases, REST and GraphQL APIs, Slack and Microsoft 365, and 50+ SaaS apps — and build AI agents on top: agents that write and run queries, fire on a schedule or an event, and chain into multi-step flows. Every action is read-only by default, scoped per tenant, and audited.
+
+What makes it defensible is **reach**. The same agents run over the data nobody else can touch: the SQL Server 2000 behind a firewall, the Firebird file under a Delphi ERP, the air-gapped network an auditor won't let you open. CoreBase reaches them through [CoreMCP](/coremcp/intro) — a zero-trust agent that dials outbound only, so raw rows never leave your perimeter unless you choose.
 
 ## Where to start
 
 <CardGroup cols={2}>
-  <Card title="Run CoreMCP on your own server" icon="terminal" href="/coremcp/intro">
-    The open-source Go agent. Install it on a machine that can reach your database, configure one YAML, and wire it into Claude Desktop, Cursor, or CoreBase Cloud. Outbound 443 only — no inbound ports.
+  <Card title="Build your first agent" icon="robot" href="/agents/overview">
+    The visual builder. Drop a trigger, an agent step, and an action; connect them; run it. Schedule it or fire it on an event.
   </Card>
-  <Card title="Connect from the CoreBase panel" icon="layout-dashboard" href="/platform/intro">
-    The managed path. Add a data source, set access policies, and get the audit log, RBAC, and Query Memory layer on top — without running anything yourself.
+  <Card title="Connect a data source" icon="database" href="/connect/sources">
+    Paste a Postgres DSN, register a CoreMCP agent for legacy databases, wire a REST/GraphQL API, or connect a SaaS app via managed OAuth.
   </Card>
 </CardGroup>
 
-## The 60-second tour
+## What you can build
 
-Run the agent inside your network:
+<CardGroup cols={2}>
+  <Card title="Autonomous agents" icon="wand-sparkles" href="/agents/overview">
+    Give an agent a goal and the sources it may use. It explores the schema, writes the SQL, follows foreign keys, and answers — grounded in your data, not guesses.
+  </Card>
+  <Card title="Proactive agents" icon="bell" href="/agents/triggers">
+    Run on a schedule (every morning at 9:00) or react to an event (new Jira issue, new Slack message, incoming webhook). No human in the loop required.
+  </Card>
+  <Card title="Multi-step flows" icon="workflow" href="/agents/flows">
+    Chain agent and action steps into a DAG. Each step receives the output of the steps before it; branches fan out. Durable execution survives restarts.
+  </Card>
+  <Card title="Governed by default" icon="shield-check" href="/concepts/governance">
+    Read-only unless you opt a source into writes. Scope each agent to specific sources. Per-tenant Row-Level Security and a full audit log underneath.
+  </Card>
+</CardGroup>
+
+## Reach the data nobody else can
+
+<CardGroup cols={2}>
+  <Card title="Legacy databases" icon="database" href="/coremcp/intro">
+    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). The drivers other tools refuse to ship.
+  </Card>
+  <Card title="Behind the firewall" icon="server" href="/concepts/zero-raw-data-egress">
+    Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem, outbound 443 only) · Self-hosted (your VPC) · Air-gap (Enterprise Container). Pick the egress posture your compliance needs.
+  </Card>
+  <Card title="APIs & SaaS apps" icon="plug" href="/connect/connectors">
+    REST and GraphQL auto-discovered into typed tools. 50+ SaaS connectors (Jira, Gmail, GitHub, Notion, Stripe…) via managed OAuth — every connected app can take action.
+  </Card>
+  <Card title="Unified Context" icon="brain" href="/concepts/corporate-memory">
+    Schema annotations and a business glossary teach the agent what `flag_2_new` means and how `MRR` is computed. Query Memory sharpens the SQL over time — without touching raw rows.
+  </Card>
+</CardGroup>
+
+## Call it from your own apps
+
+CoreBase also exposes an OpenAI-compatible endpoint, so you can drive the same governed agents from your code:
 
 ```bash
-curl -fsSL https://get.corebasehq.com | sh
-
-cat > coremcp.yaml <<EOF
-sources:
-  - name: erp
-    type: mssql
-    dsn: "sqlserver://core_ro:pass@10.0.0.5:1433?database=ERP&encrypt=disable"
-    readonly: true
-EOF
-```
-
-Or call CoreBase from your own apps with an OpenAI-compatible endpoint:
-
-```bash
-# 1. Get a CoreBase API token (Settings → Developer)
+# 1. Get a CoreBase API token (panel → Settings → Developer)
 export COREBASE_API_KEY=cb_live_a1b2c3...
 
 # 2. Add your own LLM provider key in the panel
-#    (Settings → LLM keys → paste Anthropic/OpenAI/Gemini key)
+#    (Settings → LLM keys → paste Anthropic / OpenAI / Gemini key)
 
 # 3. Ask — OpenAI-compatible streaming response
 curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
@@ -52,36 +74,11 @@ curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
   }'
 ```
 
-## What CoreBase is for
-
-<CardGroup cols={2}>
-  <Card title="The drivers nobody else ships" icon="database" href="/coremcp/intro">
-    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). CoreBase speaks to the old guard other tools refuse to touch.
-  </Card>
-  <Card title="Reaches behind the firewall" icon="server" href="/concepts/zero-raw-data-egress">
-    Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem, outbound only) · Self-hosted (your VPC) · Air-gap (Enterprise Container). Pick the egress posture your compliance needs.
-  </Card>
-  <Card title="Query Memory" icon="brain" href="/concepts/corporate-memory">
-    Schema annotations + business glossary tell the agent that `flag_2_new` means "cancellation flag, 1 = Active, 0 = Cancelled" and that `MRR` is computed from active subscriptions. It learns your data model without touching raw rows.
-  </Card>
-  <Card title="Isolated per tenant" icon="shield-check">
-    Every tenant stays in its own sealed bubble — encrypted with its own key, read-only at the database, audited end-to-end with PostgreSQL Row Level Security.
-  </Card>
-</CardGroup>
-
-## Reference
-
 <CardGroup cols={2}>
   <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    OpenAI-compatible `POST /v1/chat/completions` — call CoreBase from your own apps with `cb_live_` tokens.
+    OpenAI-compatible `POST /v1/chat/completions` with `cb_live_` tokens. Bring your own LLM key.
   </Card>
   <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
     Drop-in Preact widget for any page. Server-signed JWT auth.
-  </Card>
-  <Card title="CoreMCP install" icon="download" href="/coremcp/install">
-    `curl | sh`, Docker, source, systemd, air-gap bundle.
-  </Card>
-  <Card title="MCP clients" icon="plug" href="/coremcp/clients">
-    Claude Desktop, Cursor, Continue, Zed — config snippets.
   </Card>
 </CardGroup>

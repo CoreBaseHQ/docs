@@ -1,0 +1,73 @@
+---
+title: "Visual builder"
+description: "Drag, connect, configure, and run agent flows on a canvas — with live run history."
+---
+
+The builder lives at **Panel → Agents**. It's a canvas where you place nodes, connect them with edges, configure each one, and run the result.
+
+## Building a flow
+
+<Steps>
+  <Step title="Add nodes">
+    Add a **trigger**, one or more **agent** steps, and optional **action** steps. A flow needs a trigger and at least one agent or action step.
+  </Step>
+  <Step title="Connect them">
+    Drag from a node's right handle to the next node's left handle to create an edge. Edges define order and data flow — each downstream step receives the output of its upstream steps. See [Flows](/agents/flows).
+  </Step>
+  <Step title="Configure each node">
+    Click a node to open its settings panel:
+
+    - **Trigger** — schedule, event, or manual. See [Triggers](/agents/triggers).
+    - **Agent** — the instruction, the sources it may use, and whether it can write.
+    - **Action** — a one-line description of the fixed task.
+  </Step>
+  <Step title="Save and run">
+    Save the flow, then hit **Run** to execute it immediately. Watch it in **Run history**.
+  </Step>
+</Steps>
+
+## Configuring an agent node
+
+| Field | What it does |
+|---|---|
+| **Label** | A name for the step (shown in run output). |
+| **Instructions** | What this agent should do, in plain language. |
+| **Sources** | Which connected sources this agent may use. Empty = all. The agent **cannot** reach a source you didn't select. |
+| **Allow writes** | Off by default. When on, the agent may call mutating operations on write-enabled sources. Leave off unless you mean it. |
+
+Action nodes take a single **Description** — they run as a fixed-purpose agent step using that line as their instruction.
+
+## Canvas controls
+
+| Action | How |
+|---|---|
+| Pan | Right-drag the canvas |
+| Select multiple | Left-drag a marquee box over nodes |
+| Delete node(s) | Right-click → **Delete** (works on a multi-selection too) |
+| Connect nodes | Drag handle → handle |
+| Zoom | Scroll |
+
+## Run history
+
+Open **Run history** (the panel toggle in the builder header) to see every execution of the active flow:
+
+- **Status** — running, succeeded, or failed, with duration.
+- **Trigger** — manual, schedule, or event.
+- **Output / error** — expand a run to read what the agent produced or why it failed.
+
+While a run is in progress the panel polls live, so you watch it complete in place.
+
+<Note>
+  Execution requires the platform's durable-execution backend to be configured. On managed CoreBase Cloud this is always on. If you self-host and it isn't configured, **Run** returns a clear error and schedules/events are inert.
+</Note>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Triggers" icon="bolt" href="/agents/triggers">
+    Make the flow proactive — schedule or event.
+  </Card>
+  <Card title="Flows" icon="diagram-project" href="/agents/flows">
+    Chain steps, pass context, branch.
+  </Card>
+</CardGroup>

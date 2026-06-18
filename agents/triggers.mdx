@@ -1,0 +1,80 @@
+---
+title: "Triggers"
+description: "Make an agent proactive — run it on a schedule or react to an event. Built in the GUI, no cron strings or webhook plumbing."
+---
+
+A trigger defines *when* a flow runs. You configure it on the trigger node — entirely in the GUI. You never write a cron expression or wire a webhook by hand.
+
+## Trigger types
+
+<CardGroup cols={3}>
+  <Card title="On a schedule" icon="clock">
+    Run on a cadence — every N minutes, hourly, daily, weekly, or a custom expression.
+  </Card>
+  <Card title="When an event happens" icon="bolt">
+    React to an event from a connected app — a new Slack message, a new Jira issue, an incoming webhook.
+  </Card>
+  <Card title="Manual only" icon="hand-pointer">
+    Runs only when you press **Run** or call the API. No automatic firing.
+  </Card>
+</CardGroup>
+
+## Schedules
+
+Pick a frequency and the builder generates the schedule for you:
+
+| Frequency | You set | Runs |
+|---|---|---|
+| Every N minutes | the interval | `*/N` minutes |
+| Hourly | minute of the hour | every hour at `:MM` |
+| Daily | time of day | every day at `HH:MM` |
+| Weekly | days + time | chosen weekdays at `HH:MM` |
+| Custom | a cron expression | as written |
+
+A live preview shows exactly when it will run (e.g. *"Runs every day at 09:00 UTC"*).
+
+<Note>
+  Schedule times are **UTC**. When you enable a flow with a schedule, CoreBase registers it with the durable-execution backend; disabling or deleting the flow removes it. Scheduled runs are exactly-once per fire.
+</Note>
+
+## Events
+
+Choose **When an event happens** and pick from a dropdown built from **your connected integrations** — native Slack and Microsoft 365 plus every SaaS app you've connected, each with its event types (GitHub: issue / pull request / push; Jira: issue created / updated / comment; Gmail: new email; Stripe: payment / invoice / subscription; and so on), plus a generic incoming webhook.
+
+When the event arrives, CoreBase matches it to every enabled flow whose trigger listens for that app and starts them.
+
+<Warning>
+  **v1 matches at the provider level.** A flow listening for `github:issues` fires on *any* GitHub event for that connection, not just issues opened. Per-event-subtype filtering (issues vs. push) is on the roadmap.
+</Warning>
+
+### Idempotency and cooldown
+
+Webhooks get retried, and busy sources (a chatty Slack channel) can fire constantly. CoreBase guards both with one mechanism:
+
+- A retried delivery in the same window is **deduplicated** — it won't start a second run.
+- A flow runs **at most once per cooldown window** per fire (default 60s), so a high-traffic source can't flood execution or your LLM bill.
+
+## Putting it together
+
+A proactive agent is just a trigger wired to an agent step:
+
+```
+[ Trigger: daily 09:00 ] → [ Agent: "Summarize yesterday's orders and post the top risks" ]
+
+[ Trigger: new Jira issue ] → [ Agent: "Triage the issue against our SLA rules" ]
+```
+
+<Note>
+  Today an agent's result lands in the run record. A **notify action** (post the result to Slack or email) is on the roadmap — for now, read outcomes in **Run history** or have the agent itself call a write-enabled messaging source.
+</Note>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Flows" icon="diagram-project" href="/agents/flows">
+    Chain the triggered agent into multiple steps.
+  </Card>
+  <Card title="Connect apps" icon="plug" href="/connect/connectors">
+    Connect the integrations whose events you want to trigger on.
+  </Card>
+</CardGroup>
