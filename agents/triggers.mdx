@@ -43,9 +43,9 @@ Choose **When an event happens** and pick from a dropdown built from **your conn
 
 When the event arrives, CoreBase matches it to every enabled flow whose trigger listens for that app and starts them.
 
-<Warning>
-  **v1 matches at the provider level.** A flow listening for `github:issues` fires on *any* GitHub event for that connection, not just issues opened. Per-event-subtype filtering (issues vs. push) is on the roadmap.
-</Warning>
+<Note>
+  CoreBase fires on the **specific event you pick** (e.g. GitHub *issues* vs *push*) whenever it can read the event type from the payload. If the type can't be determined, it falls back to firing on any event from that app — so you never miss one. Choosing **Any event from this app** always fires on everything.
+</Note>
 
 ### Idempotency and cooldown
 
@@ -54,18 +54,22 @@ Webhooks get retried, and busy sources (a chatty Slack channel) can fire constan
 - A retried delivery in the same window is **deduplicated** — it won't start a second run.
 - A flow runs **at most once per cooldown window** per fire (default 60s), so a high-traffic source can't flood execution or your LLM bill.
 
+### How events reach CoreBase
+
+You don't wire a webhook by hand. Once an app is connected, CoreBase receives its events automatically and routes each one to the flows that listen for it — just pick the event in the trigger dropdown and enable the flow. A few providers ask you to switch on event delivery (or grant an extra scope) on their side when you connect them; the connect screen tells you when that's needed.
+
 ## Putting it together
 
 A proactive agent is just a trigger wired to an agent step:
 
 ```
-[ Trigger: daily 09:00 ] → [ Agent: "Summarize yesterday's orders and post the top risks" ]
+[ Trigger: daily 09:00 ] → [ Agent: "Summarize yesterday's orders and post the top risks" ] → [ Notify: Slack #ops ]
 
-[ Trigger: new Jira issue ] → [ Agent: "Triage the issue against our SLA rules" ]
+[ Trigger: new Jira issue ] → [ Agent: "Triage against our SLA rules" ] → [ Approval ] → [ Notify: Slack ]
 ```
 
 <Note>
-  Today an agent's result lands in the run record. A **notify action** (post the result to Slack or email) is on the roadmap — for now, read outcomes in **Run history** or have the agent itself call a write-enabled messaging source.
+  Add a **Notify** step to push a result to Slack or a webhook, and an **Approval** step to pause the flow for a human to approve or reject before it continues — useful before anything that writes or sends. See [Flows](/agents/flows).
 </Note>
 
 ## Next

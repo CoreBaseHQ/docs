@@ -17,14 +17,14 @@ Every source starts read-only.
 Each API/SaaS connection has an **Allow writes** toggle (off by default). Turn it on and the agent gains the mutating tools for that source — and only that source. Agent nodes in a flow also have their own **Allow writes** switch, so you decide per step.
 
 <Warning>
-  Treat write enablement as a deliberate act. Today a source is either read-only or fully write-enabled. Per-action **approval gates, spend budgets, and a kill switch** for autonomous writes are on the roadmap — until then, keep writes off for anything that runs unattended.
+  Treat write enablement as a deliberate act. Today a source is either read-only or fully write-enabled. For autonomous flows, gate writes with an **Approval** step (a person approves before the flow continues), and rely on the per-run **step budget** and the **Stop** control in Run history. Per-write (tool-call level) approval is on the roadmap — until then, keep writes off for anything that runs fully unattended.
 </Warning>
 
 ## Source scoping
 
 An agent only ever sees the sources you grant it. In chat you pick sources from the header; in a flow each agent node has a **Sources** list; via the API you pass `source_ids`.
 
-This is enforced at the **tool registry** — the agent's toolset is built from only the scoped sources. It cannot "jump" from one system to another (say, from your POS database to your accounting ERP) because the tools for the second source were never created for that request.
+This is enforced structurally — the agent's toolset is built from only the scoped sources, so it cannot "jump" from one system to another (say, from your POS database to your accounting ERP). The tools for the second source were never created for that request, so there's nothing for a prompt to talk it into.
 
 ## Per-tenant isolation
 
@@ -32,7 +32,7 @@ Every tenant runs in its own sealed bubble, enforced at the database with **Post
 
 - Each tenant's data, annotations, memories, and connections are scoped by `org_id` and invisible across tenants.
 - The application role runs **without** the ability to bypass RLS; isolation holds even if application code has a bug.
-- Cross-tenant lookups that genuinely need to span tenants (resolving which tenant a webhook belongs to) go through narrow, audited `SECURITY DEFINER` functions — never a broad bypass.
+- The rare lookups that must span tenants (e.g. routing an incoming webhook to the right tenant) are handled through narrow, audited paths — never a broad bypass.
 
 ## Audit
 

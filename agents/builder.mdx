@@ -9,7 +9,7 @@ The builder lives at **Panel → Agents**. It's a canvas where you place nodes, 
 
 <Steps>
   <Step title="Add nodes">
-    Add a **trigger**, one or more **agent** steps, and optional **action** steps. A flow needs a trigger and at least one agent or action step.
+    Add a **trigger**, one or more **agent** steps, and optional **action**, **approval**, and **notify** steps. A flow needs a trigger and at least one agent or action step.
   </Step>
   <Step title="Connect them">
     Drag from a node's right handle to the next node's left handle to create an edge. Edges define order and data flow — each downstream step receives the output of its upstream steps. See [Flows](/agents/flows).
@@ -20,6 +20,8 @@ The builder lives at **Panel → Agents**. It's a canvas where you place nodes, 
     - **Trigger** — schedule, event, or manual. See [Triggers](/agents/triggers).
     - **Agent** — the instruction, the sources it may use, and whether it can write.
     - **Action** — a one-line description of the fixed task.
+    - **Approval** — pause for a human to approve or reject before the flow continues.
+    - **Notify** — send the previous step's output to Slack or a webhook.
   </Step>
   <Step title="Save and run">
     Save the flow, then hit **Run** to execute it immediately. Watch it in **Run history**.
@@ -51,9 +53,10 @@ Action nodes take a single **Description** — they run as a fixed-purpose agent
 
 Open **Run history** (the panel toggle in the builder header) to see every execution of the active flow:
 
-- **Status** — running, succeeded, or failed, with duration.
+- **Status** — running, awaiting approval, succeeded, failed, rejected, or cancelled, with duration.
 - **Trigger** — manual, schedule, or event.
-- **Output / error** — expand a run to read what the agent produced or why it failed.
+- **Per-node trace** — expand a run to see each step's status, output or error, and how long it took.
+- **Approve / Reject / Stop** — when a run is paused at an approval step, approve or reject it here; you can also stop any active run.
 
 While a run is in progress the panel polls live, so you watch it complete in place.
 

@@ -23,14 +23,7 @@ with: required_attrs    # e.g. dept=hr, branch=istanbul
 
 ## Where attributes come from
 
-User attributes live in **Clerk organization membership → publicMetadata**. They're injected into the JWT by a template:
-
-```jsonc
-// Clerk → JWT Templates → "user_attrs"
-{
-  "user_attrs": "{{org_membership.public_metadata}}"
-}
-```
+User attributes live on each member's **organization membership metadata** and are carried into their session token at sign-in. Set them per member from your organization settings.
 
 Example membership metadata:
 

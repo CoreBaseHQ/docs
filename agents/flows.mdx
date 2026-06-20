@@ -29,14 +29,16 @@ Whatever an upstream node produces is prepended to the downstream node's instruc
 
 B doesn't need to re-derive A's list; it's handed to it.
 
-## Agent vs. action nodes
+## Node types
 
 | Node | Use it for |
 |---|---|
 | **Agent** | Open-ended reasoning with its own instruction and source scope. |
 | **Action** | A fixed, single-purpose step described in one line. Runs as an agent step using that description. |
+| **Approval** | Pauses the flow until a person approves or rejects it in Run history. Put it before a step that writes or sends. Approve continues with the reviewed content; reject stops the run. |
+| **Notify** | Sends the previous step's output to Slack or a webhook. |
 
-Both execute the same way and both receive upstream context. Use **action** when the step is a fixed task; use **agent** when you want to give it more instruction and its own source scope.
+Agent and action steps execute the same way and both receive upstream context. Use **action** when the step is a fixed task; use **agent** when you want to give it more instruction and its own source scope.
 
 ## Durability
 
@@ -49,8 +51,10 @@ Flows run on durable execution, which means:
 ## Good to know
 
 <Note>
-  Branches **fan out** (multiple downstream nodes from one node all run). Conditional branching ("only run B if A found something") and per-node step logs are on the roadmap — today every executable node on the path runs, and the run record shows the combined output.
+  Run history shows a **per-node trace** — each step's status, output, and how long it took. Branches **fan out** (multiple downstream nodes from one node all run). Conditional branching ("only run B if A found something") is on the roadmap — today every executable node on the path runs.
 </Note>
+
+A flow won't run forever: there's a cap on how many steps a single run executes. Approval steps wait for a person and don't count against it. You can also **stop a run** at any time from Run history.
 
 A cycle in the graph won't hang the run — CoreBase detects it and runs the remaining nodes in their original order as a fallback. Keep flows acyclic for predictable ordering.
 

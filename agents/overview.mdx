@@ -42,12 +42,14 @@ Every run is recorded. Open **Run history** in the builder to watch runs live an
 Agents inherit the same governance as everything else in CoreBase:
 
 - **Read-only by default.** An agent can only perform writes if the *source* it uses is explicitly opted into writes. See [Governance](/concepts/governance).
-- **Source scoping.** Each agent node is scoped to the sources you pick. It physically cannot reach a source you didn't grant — this is enforced at the tool registry, not by a prompt.
+- **Source scoping.** Each agent node is scoped to the sources you pick. It physically cannot reach a source you didn't grant — this is enforced by the system, not by a prompt.
+- **Approval gates.** Add an **Approval** step to require a person to approve before the flow continues — put it before anything that writes or sends.
+- **Budget & stop.** Each run has a step cap, and you can stop any run from Run history.
 - **Per-tenant isolation.** Every run executes inside its tenant's Row-Level Security context.
 - **Audited.** Creating, editing, and running flows is recorded in the audit log.
 
 <Note>
-  Autonomous writes are deliberately conservative. Today a source is either read-only or write-enabled. Per-action **approval gates, budgets, and a kill switch** are on the roadmap — until they ship, leave `Allow writes` off for anything you don't fully trust to run unattended.
+  Autonomous writes are deliberately conservative. Keep `Allow writes` off for anything you don't fully trust to run unattended, and use an **Approval** step to gate the ones you do. Per-write (tool-call level) approval is on the roadmap.
 </Note>
 
 ## Next
