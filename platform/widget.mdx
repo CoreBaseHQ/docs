@@ -10,7 +10,7 @@ The CoreBase widget is a Preact-based chat UI that lives in a shadow-DOM-isolate
 1. Your backend mints a short-lived JWT signed with the tenant's B2B secret.
 2. You load the widget script and call `window.CorebaseWidget.init(...)` with that JWT.
 3. The widget renders a floating launcher (or inline element) and forwards user queries to CoreBase with the JWT.
-4. Access policies on the CoreBase side restrict what each user can see.
+4. CoreBase trusts the identity in that JWT — and can pass it through to your own systems so each user only sees their own data (see [Scoping data per end-user](#scoping-data-per-end-user)).
 
 ## Installation
 
@@ -65,12 +65,32 @@ window.CorebaseWidget.init({
   primaryColor?: string,    // Accent color, any CSS color — default #0b5fff
   logoUrl?: string,         // Custom logo in header
   zIndex?: number,          // Stacking order — default 2147483000
+  voiceEnabled?: boolean,   // Show the mic button — configure voice in the panel first
+  theme?: "dark" | "light" | "auto",  // Color theme — "auto" follows the OS. Default "dark"
+  locale?: "en" | "tr",     // UI language — omit to auto-detect from the browser
 });
 
 window.CorebaseWidget.destroy();  // Tear down and remove from DOM
 ```
 
 Either `authToken` or `getAuthToken` is required. Use `getAuthToken` when your token needs to be refreshed periodically — the widget calls it before each request.
+
+## Theme & language
+
+The widget ships dark by default. Pass `theme: "light"` for a light surface, or
+`theme: "auto"` to follow the visitor's OS preference (and switch live if they do).
+`primaryColor` sets the accent in any theme.
+
+The interface is localized — pass `locale: "tr"` for Turkish, `"en"` for English,
+or omit it to auto-detect from the visitor's browser. (Assistant *replies* are
+already in the visitor's own language regardless of this setting.)
+
+## Conversation history
+
+Each visitor can reopen their **own** past conversations from the header — a
+History button lists them, and a New button starts a fresh one. History is scoped
+strictly to the signed-in end-user (the JWT `sub`); a visitor never sees another
+user's chats. Nothing to enable — it's on whenever the widget is authenticated.
 
 ## Generating the JWT (server side)
 
@@ -97,6 +117,96 @@ $jwt = JWT::encode($payload, $secret, 'HS256');
 Required claim: **`sub`** (end-user ID, used in audit logs). The `role: "admin"` claim promotes to admin; otherwise the user is treated as a regular member. `user_attrs` feeds into [access policies](/concepts/rbac).
 
 The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
+
+## Scoping data per end-user
+
+When the widget is embedded in a multi-user product, each person should see only
+their own records — their orders, their tickets, their account. CoreBase lets you
+enforce that in **your own backend**, using the identity you already signed into
+the JWT.
+
+On a connected **REST / API source**, any request header can be templated with a
+claim from the widget's JWT using `{{claim.<name>}}`. CoreBase fills it in from
+the **verified** token on every request and forwards it to your API:
+
+```jsonc
+// Source → Headers (panel → Sources → your API connection)
+{
+  "X-On-Behalf-Of": "{{claim.sub}}",   // the signed-in end-user
+  "X-Service-Key":  "your-service-secret"
+}
+```
+
+Your API receives the trusted end-user identity on every call and returns only
+that user's data — the same per-user filtering your app already does for its own
+pages. CoreBase never lets the model choose the identity; it always comes from
+the signed token.
+
+<Note>
+  **Fail-closed by design.** A source whose identity header can't be resolved is
+  hidden, not queried. So a templated source is reachable **only** from a valid
+  end-user widget session — never from panel chat, the Developer API, or a
+  scheduled agent run (none of which carry an end-user identity). Pair this with
+  a read-only source for defense in depth.
+</Note>
+
+`{{claim.sub}}` is the most common, but **any top-level claim** you sign into the
+token works. To scope by something other than the user ID — a branch or
+sub-tenant, say — add it as a top-level claim alongside `sub` (not nested inside
+`user_attrs`) and reference it as `{{claim.branch}}`:
+
+```php
+$payload = [
+    'sub'    => $current_user->id,
+    'branch' => $current_user->branch,   // top-level → available as {{claim.branch}}
+    'exp'    => time() + 60 * 30,
+];
+```
+
+The enforcement lives in the API you connect; CoreBase guarantees the identity it
+forwards is the one you signed.
+
+## Voice mode
+
+Visitors can **talk** to the assistant instead of typing. The spoken answers come
+from the exact same governed assistant as text chat — same data access, same
+read-only and per-user scoping — so nothing about your governance changes.
+
+Voice is **bring-your-own-key**, like your LLM provider:
+
+1. In the panel, go to **Settings → Voice**.
+2. Add your **Deepgram** key (speech-to-text) and your **ElevenLabs** key
+   (text-to-speech). Optionally pick a voice and model.
+3. Toggle **Enable voice** on. The page shows a readiness check (keys set + an
+   LLM key configured) so you know it's live.
+
+Then turn it on in the embed:
+
+```ts
+window.CorebaseWidget.init({
+  apiBaseUrl: "https://api.corebasehq.com",
+  publicId: "YOUR_TENANT_PUBLIC_ID",
+  authToken: jwt,
+  voiceEnabled: true,
+});
+```
+
+A mic button appears next to the composer. Tapping it asks for microphone
+permission, then the visitor can speak; the assistant replies out loud. If voice
+isn't configured yet, the button surfaces a friendly "not set up" message rather
+than failing silently.
+
+<Note>
+  Keys are stored encrypted (AES-GCM, per-tenant) and never returned to the
+  browser — the widget requests a short-lived session, it never sees your
+  Deepgram/ElevenLabs keys.
+</Note>
+
+The voice runtime is loaded lazily, only the first time a visitor starts voice —
+so enabling it adds nothing to the widget's load for everyone who never taps the
+mic. If your site sends a strict **Content-Security-Policy**, allow
+`cdn.jsdelivr.net` (script) and your CoreBase voice host (connect) so voice can
+initialize.
 
 ## Security
 

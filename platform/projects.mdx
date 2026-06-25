@@ -1,0 +1,74 @@
+---
+title: "Projects"
+description: "Group sources, agents, and chats into separate workspaces inside one organization."
+---
+
+A **project** is a workspace inside your organization. Use projects to keep
+unrelated work apart — for example a `Production` project with your ERP database
+and finance agents, and a `Sales` project with HubSpot and the Jira connector —
+without creating a second organization or a second bill.
+
+Every organization starts with one **Default** project. You can add more at any
+time and switch between them from the sidebar.
+
+## What a project scopes
+
+When a project is active, you only see and use that project's resources:
+
+- **Data sources** — databases, REST/GraphQL APIs, SaaS connectors, and on-prem
+  CoreMCP sources
+- **Agents & flows** — and their run history
+- **Chats** — including conversation history
+- **Unified Context** — schema annotations, the business glossary, and the
+  knowledge an agent has ingested
+
+An agent can only reach the sources in its own project. Switching projects swaps
+the entire workspace — sources, agents, chat history, and context all change
+together.
+
+## What stays shared across the organization
+
+Some things belong to the whole organization, not a single project, and are the
+same in every project:
+
+- **Billing & plan**
+- **Members & roles**
+- **LLM provider keys** (BYOK)
+- **API tokens**
+- **Audit & activity logs**
+
+## Additional system prompt
+
+Each project can carry an **additional system prompt** — extra instructions for
+the assistant scoped to that project (tone, persona, domain rules, business
+definitions like "active customer = ordered in the last 90 days"). Edit it under
+**Settings → Projects** (the pencil on a project), as an Admin.
+
+It's **added on top of** the assistant's built-in behavior — it does **not**
+override the safety and anti-fabrication rules. Because it's per-project, it
+applies everywhere that project drives the assistant: panel chat, the widget,
+voice, and the Developer API.
+
+## Switching projects
+
+Use the project switcher at the top of the sidebar. The switch is instant — the
+sidebar, dashboard, sources, agents, and chat all reload into the selected
+project.
+
+## Creating & managing projects
+
+Open the switcher and choose **New project**, or manage them all under
+**Settings → Projects**. From there you can rename a project or delete an empty
+one. Creating and deleting projects requires an **Admin** role.
+
+A project must be empty before it can be deleted — move or remove its sources,
+agents, and chats first. The Default project can't be deleted.
+
+## Projects and the API / widget
+
+The [Developer API](/api-reference/introduction) and the
+[embeddable widget](/platform/widget) operate in your organization's **Default**
+project. Sources, agents, and chat called over the API run within that scope. To
+target a different project today, use a separate organization, or scope a chat
+request to specific sources with `source_ids` (see
+[`GET /v1/sources`](/api-reference/endpoints/sources)).

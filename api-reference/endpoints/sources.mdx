@@ -1,0 +1,64 @@
+---
+title: "GET /v1/sources"
+description: "List the data sources your agents and chat can reach."
+---
+
+Returns the queryable data sources connected to your organization — databases,
+REST/GraphQL APIs, SaaS connectors, and on-prem CoreMCP sources. Use the `id`
+values to scope a chat request via `source_ids`.
+
+Requires the `sources_read` permission.
+
+## Request
+
+```http
+GET /v1/sources HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+No body, no query parameters.
+
+## Response
+
+```json
+[
+  { "id": "9b1c…", "name": "erp_prod", "kind": "database" },
+  { "id": "3f7a…", "name": "Stripe", "kind": "api" },
+  { "id": "c2d8…", "name": "Jira", "kind": "nango" }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Source id — pass in `source_ids` to scope a chat request |
+| `name` | `string` | Human-friendly source name |
+| `kind` | `"database" \| "api" \| "coremcp" \| "nango"` | Connection type |
+
+<Note>
+  The list reflects your organization's default [project](/platform/projects).
+  Sources, agents, and chat all run within that scope unless you narrow further
+  with `source_ids`.
+</Note>
+
+## Scope a chat request
+
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/v1")
+
+stream = client.chat.completions.create(
+    model="corebase",
+    messages=[{"role": "user", "content": "Open invoices over 30 days?"}],
+    stream=True,
+    extra_body={"source_ids": ["9b1c…"]},  # only the ERP database
+)
+```
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `401` | Missing or invalid token |
+| `403` | Token lacks `sources_read` permission |

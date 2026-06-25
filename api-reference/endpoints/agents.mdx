@@ -1,0 +1,130 @@
+---
+title: "Agents & runs"
+description: "List agent flows, trigger governed runs, and poll their status."
+---
+
+Beyond chat, you can trigger your **agent flows** — multi-step, governed
+automations that run durably on CoreBase's execution backend (read-only by
+default, with approval gates and audit). Build flows visually in the panel, then
+run them programmatically.
+
+The flow runs under its own project scope and the same governance as the panel —
+the API can't bypass read-only/approval rules.
+
+## List agents
+
+```http
+GET /v1/agents HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+Requires `mcp_query`. Returns the agent flows in your default
+[project](/platform/projects).
+
+```json
+[
+  {
+    "id": "a1b2…",
+    "name": "Daily revenue digest",
+    "status": "active",
+    "is_enabled": true
+  }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Flow id — use it to trigger a run |
+| `name` | `string` | Flow name |
+| `status` | `"draft" \| "active" \| "paused"` | Lifecycle status |
+| `is_enabled` | `boolean` | Whether triggers are enabled |
+
+## Trigger a run
+
+```http
+POST /v1/agents/{flow_id}/run HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+Requires the `agents_run` permission. Returns immediately — the run executes
+asynchronously; poll `GET /v1/runs/{run_id}` for the result.
+
+```json
+{
+  "run_id": "r9k2…",
+  "workflow_id": "agentflow-r9k2…",
+  "status": "running"
+}
+```
+
+Only an **active, enabled** flow can be triggered — a draft, paused, or disabled
+flow returns `409` (the API can't bypass the same availability rules as the panel).
+
+| Status | Meaning |
+|---|---|
+| `403` | Token lacks `agents_run` permission |
+| `404` | No agent flow with that id in your organization |
+| `409` | Flow isn't runnable (draft, paused, or disabled) |
+| `503` | Execution backend not configured |
+| `502` | Run could not be started |
+
+## Poll run status
+
+```http
+GET /v1/runs/{run_id} HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+Requires the `agents_run` permission — run output, errors, and steps sit behind
+the same boundary as triggering runs.
+
+```json
+{
+  "id": "r9k2…",
+  "flow_id": "a1b2…",
+  "status": "succeeded",
+  "trigger": "api",
+  "output": "Revenue is up 12% week-over-week…",
+  "error": null,
+  "steps": [
+    { "node_id": "agent-1", "label": "Summarize", "type": "agent", "status": "succeeded" }
+  ],
+  "started_at": "2026-06-23T12:00:00",
+  "ended_at": "2026-06-23T12:00:14"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | `"running" \| "awaiting_approval" \| "succeeded" \| "failed"` | Run state |
+| `output` | `string \| null` | Final result text |
+| `error` | `string \| null` | Failure reason, if any |
+| `steps` | `array` | Per-node execution trace |
+| `started_at` / `ended_at` | `string \| null` | ISO timestamps |
+
+## End-to-end
+
+```python
+import time, httpx
+
+H = {"Authorization": "Bearer cb_live_xxx"}
+base = "https://api.corebasehq.com/v1"
+
+run = httpx.post(f"{base}/agents/a1b2…/run", headers=H).json()
+run_id = run["run_id"]
+
+while True:
+    r = httpx.get(f"{base}/runs/{run_id}", headers=H).json()
+    if r["status"] in ("succeeded", "failed", "awaiting_approval"):
+        print(r["status"], r.get("output") or r.get("error"))
+        break
+    time.sleep(2)
+```
+
+<Note>
+  Runs that hit an **approval gate** return `awaiting_approval`. Approve or reject
+  them from the panel; the run resumes from where it paused.
+</Note>
