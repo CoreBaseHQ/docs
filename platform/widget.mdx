@@ -118,6 +118,48 @@ Required claim: **`sub`** (end-user ID, used in audit logs). The `role: "admin"`
 
 The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
 
+## Per-user message limits
+
+You can cap how many messages **each end-user** may send — useful to stop a
+single visitor from burning through your LLM budget. Limits are **per user**
+(keyed by the `sub` you sign), not a single shared pool, and you set them as
+extra claims in the JWT — so you stay in control: change a user's limit by
+signing their next token with new values.
+
+Add any of these claims (all optional — omit one and that period is unlimited):
+
+```php
+$payload = [
+    'sub'                      => $current_user->id,  // limit is counted per sub
+    'daily_message_limit'      => 50,
+    'monthly_message_limit'    => 1000,
+    'per_minute_message_limit' => 5,
+    'exp'                      => time() + 60 * 30,
+];
+```
+
+| Claim | Window |
+|---|---|
+| `per_minute_message_limit` | rolling calendar minute |
+| `daily_message_limit` | calendar day (UTC) |
+| `monthly_message_limit` | calendar month (UTC) |
+
+When a user hits a limit, the request is rejected with **HTTP 429** and the
+widget shows a short message; the counter resets at the start of the next
+window. **Voice turns count too** — a spoken question is the same governed turn
+as a typed one.
+
+<Note>
+  On **CoreBase Cloud** these limits are enforced out of the box. On a
+  **self-hosted** deployment, per-user limit enforcement requires Redis to be
+  configured — without it, the limits are accepted but not enforced.
+</Note>
+
+To build a per-user usage dashboard, call **`GET /v1/usage`** with a
+[`cb_live_` token](/api-reference/authentication): it returns each end-user's
+live `daily` / `monthly` / `per_minute` counts. Since you signed the limits,
+compute `remaining = your_limit − used`.
+
 ## Scoping data per end-user
 
 When the widget is embedded in a multi-user product, each person should see only
