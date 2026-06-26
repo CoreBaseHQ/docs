@@ -1,48 +1,57 @@
 ---
 title: "SaaS connectors"
-description: "Connect 50+ SaaS apps through managed OAuth — every connected app can take action, no per-integration code."
+description: "Connect a SaaS app and your agents can use it — take actions and search its content, with the same governance as any other source."
 ---
 
-CoreBase connects to 50+ SaaS apps — Jira, Gmail, GitHub, Notion, Stripe, HubSpot, Zendesk, Linear, Asana, and more — through **managed OAuth**. You don't write an integration per app; you click connect, authorize, and the app becomes a source your agents can use.
-
-## How it works
-
-Authentication runs through **Nango** (a managed OAuth layer): the OAuth tokens live there, not in CoreBase, and calls go through an authenticated proxy that injects and refreshes them. To your agents, a connected app behaves like any other API source — the same governance applies.
-
-<Note>
-  SaaS connectors are a **cloud-relay** tier: auth and proxied calls pass through the connector cloud. This is distinct from the **sovereign** path for legacy/on-prem databases via [CoreMCP](/coremcp/intro), where data never egresses. Pick the tier that matches your compliance needs.
-</Note>
+Connect an app like Jira, Gmail, GitHub, or Notion and it becomes a source your agents can use. You don't write an integration per app: click connect, authorize, and the app is live — your agents can act in it and search its content, governed exactly like everything else.
 
 ## Connect an app
 
-In **Panel → Sources → Add integration**, native sources (Slack, Microsoft 365) and SaaS apps appear in **one unified grid**. Pick an app, complete the OAuth flow, and it's connected — tools enabled by default.
+In **Panel → Sources → Add integration**, native sources (Microsoft 365) and SaaS apps appear in one unified grid. Pick an app, complete the OAuth flow, and it's connected — tools enabled by default.
 
-## Action on every app
+Authentication runs through a **managed OAuth layer**: the OAuth tokens live there, not in CoreBase, and calls go through an authenticated proxy that injects and refreshes them. To your agents, a connected app behaves like any other API source.
 
-Every connected app can **take action**, not just feed retrieval:
+<Note>
+  SaaS connectors are a **cloud-relay** tier — auth and proxied calls pass through the connector cloud. For legacy/on-prem databases, the **sovereign** path via [CoreMCP](/coremcp/intro) keeps data on your own network. Pick the tier your compliance needs.
+</Note>
+
+## Available connectors
+
+50+ apps across the categories below, with more added regularly. Browse the full grid at [corebasehq.com/integrations](https://corebasehq.com/integrations).
+
+| Category | Apps |
+|---|---|
+| **Dev tools** | GitHub, GitLab, Bitbucket, Jira, Linear, Asana, Trello, Sentry |
+| **Communication** | Slack, Microsoft Teams, Gmail, Outlook, Discord, Zoom |
+| **CRM** | Salesforce, HubSpot, Pipedrive, Zoho |
+| **Support** | Zendesk, Intercom, Freshworks |
+| **Knowledge** | Notion, Confluence, Google Drive, Dropbox, Box, Airtable |
+| **Payments** | Stripe, PayPal, Square, QuickBooks, Xero |
+| **Marketing** | Mailchimp, Klaviyo, SendGrid, Mailgun |
+| **Commerce** | Shopify, WooCommerce, BigCommerce |
+| **Productivity** | Google Calendar, Calendly, Google Sheets, Todoist, ClickUp |
+| **Analytics** | Google Analytics, Mixpanel, Amplitude |
+
+## Take action in any app
+
+Every connected app can act, not just feed search:
 
 - **Typed tools** — when the provider ships an OpenAPI spec, each operation becomes a precise, typed tool.
-- **Generic request tool** — when it doesn't, CoreBase exposes a single governed `request` tool: the agent provides a method and path, and the call goes through the authenticated proxy. (LLMs already know the common SaaS API shapes.)
+- **Generic request tool** — when it doesn't, CoreBase exposes a single governed `request` tool: the agent provides a method and path, and the call goes through the authenticated proxy.
 
-Either way the agent can do real work in the app — open a Jira issue, send a Gmail draft, post to a channel — subject to governance.
+Either way the agent does real work — open a Jira issue, send a Gmail draft, post to a channel — subject to governance.
+
+## Search an app's content
+
+Connected apps also feed **retrieval**. Turn it on per connection and the app's content syncs into [Unified Context](/concepts/corporate-memory), incrementally and in the background — no manual exports. From then on an agent can search across the app's messages, issues, docs, and records, with citations. Actions and retrieval are both live today.
 
 ## Governance carries over
 
-Connectors inherit the same controls as any source:
+Connectors inherit the same controls as any source — read-only by default, source-scoped, per-tenant isolated, and audited. The generic `request` tool exposes only `GET` until you enable writes, and mutating operations are never handed to an agent on a read-only connection. See [Governance](/concepts/governance) for the full model.
 
-- **Read-only by default.** The generic tool only exposes `GET` until you enable writes; with writes on, all methods are allowed. Mutating operations are never handed to the agent on a read-only connection.
-- **Source scoping.** An agent only sees the connectors you scope it to.
-- **Per-tenant isolation & audit.** Same as everything else.
+## Trigger on events
 
-See [Governance](/concepts/governance).
-
-## Events
-
-Connected apps can also **trigger agents**. A new Jira issue, a new Gmail message, a Stripe payment — these surface in the [trigger event picker](/agents/triggers) and can wake a flow. Native Slack messages do too.
-
-<Note>
-  **Tools** (taking action) are live today. **RAG ingestion** — syncing an app's content into [Unified Context](/concepts/corporate-memory) for retrieval — is on the roadmap; you can enable it per connection ahead of the ingestion pipeline landing.
-</Note>
+Connected apps can also **wake an agent**. A new Jira issue, a new Gmail message, a Stripe payment — these surface in the [trigger event picker](/agents/triggers) and can fire a flow.
 
 ## Next
 
