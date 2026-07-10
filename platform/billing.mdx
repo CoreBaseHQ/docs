@@ -1,48 +1,84 @@
 ---
 title: "Billing"
-description: "Subscription tiers and Stripe-managed plan changes."
+description: "Plans, prepaid usage balance, and how AI costs are measured."
 ---
 
-CoreBase charges a flat monthly subscription. LLM calls run against your own provider API keys ([Bring Your Own Key](/platform/llm-keys)) — no per-token markup from us.
+CoreBase pricing has two parts: a **flat monthly plan** (features and limits) and a **prepaid usage balance** for AI calls. You can skip usage charges entirely by bringing your own LLM keys.
+
+## How AI usage is billed
+
+Every chat turn runs in one of two modes, chosen automatically:
+
+- **Your own keys ([Bring Your Own Key](/platform/llm-keys))** — inference runs on your provider account. CoreBase adds **no per-token charges**; your balance is untouched.
+- **Platform balance** — no key configured? Requests run on CoreBase's managed models and are billed from your prepaid balance at the published per-model rates.
+
+<Note>
+  **No surprise bills — ever.** The balance is prepaid: when it runs out, AI responses pause until you top up (or add your own key). There is no metered invoice at the end of the month.
+</Note>
+
+### Published rates
+
+Requests are routed quality-first across frontier Claude models. Each turn is billed at the **published rate of the model that actually served it** — the full rate table lives in **Billing → Model pricing** in your panel. Rates include our margin; what you see is what you pay.
+
+### What a query typically costs
+
+Costs scale with how much work the agent does — a simple question is one model call, a deep data question can be many steps (schema lookups, queries, follow-ups). At current published rates:
+
+| Query profile | Typical cost |
+|---|---|
+| Simple question, no data access | ~$0.01–0.03 |
+| Typical data query (a few agent steps) | ~$0.05–0.15 |
+| Deep multi-step investigation | ~$0.30–0.50+ |
+
+Your own real numbers — average and 90th-percentile cost per query, measured from your actual usage — are shown in **Analytics → Cost**.
+
+## Tracking spend
+
+**Analytics → Cost** answers "what is this burning?" from real usage data:
+
+- **This billing period** — spend aligned to your renewal date, plus a projected period total at your current pace.
+- **Per team member and per widget visitor** — who is using AI, how many turns, at what cost.
+- **Per model** — which models served your traffic and what each cost.
+- **BYOK estimate** — using your own keys, CoreBase bills nothing; an optional toggle shows an *estimated* cost at provider list prices so you can still attribute spend internally.
+
+When your balance runs low, the dashboard warns you before responses pause.
+
+## Balance and top-ups
+
+- Paid plans include monthly usage credit: **$5/month** on Pro, **$15/month** on Team. Free includes a **one-time $1 trial credit**.
+- Top up any amount from **$5 to $500** in the billing page. Purchased credit **never expires**.
+- Included credit is spent first, then purchased credit.
 
 ## Plans
 
 <CardGroup cols={2}>
   <Card title="Free" icon="bolt">
-    **$0/month** · 1 data source · Unified Context · Bring your own LLM keys
+    **$0/month** · 1 data source · Unified Context · $1 trial usage credit · Bring your own LLM keys
   </Card>
   <Card title="Pro" icon="crown">
-    **$49/month** · Up to 5 data sources · Unified Context · Cloud relay · Bring your own LLM keys
+    **$49/month** · Up to 5 data sources · Unified Context · Cloud relay · $5/month usage credit
   </Card>
   <Card title="Team" icon="users">
-    **$149/month** · Unlimited data sources · Audit Log + RBAC · Bring your own LLM keys
+    **$149/month** · Unlimited data sources · Audit Log + RBAC · $15/month usage credit
   </Card>
   <Card title="Enterprise" icon="building">
     Custom · Air-gap deployment · SLA · Yearly contract · Contact sales
   </Card>
 </CardGroup>
 
-Unified Context — the schema annotations and business glossary that ground the agent in your data — is included in every plan. Tier differences are volume (data sources) and enterprise controls (RBAC, audit log, air-gap).
-
-## What you pay for
-
-| Resource | Cost |
-|---|---|
-| Platform subscription | Flat monthly fee (Pro / Team) |
-| LLM tokens | Billed by your provider, not by CoreBase |
-| Data sources | Included in plan |
+Unified Context — the schema annotations and business glossary that ground the agent in your data — is included in every plan. Tier differences are volume (data sources), included usage credit, and enterprise controls (RBAC, audit log, air-gap).
 
 ## Starting a subscription
 
-In **Billing → Plans**, click **Switch to Pro** or **Switch to Team**. You're redirected to Stripe-hosted checkout. Once paid, your plan flips within a few seconds.
+In **Billing → Plans**, click **Switch to Pro** or **Switch to Team**. You're redirected to a secure hosted checkout. Once paid, your plan flips within a few seconds.
 
 <Note>
-  You can use the Free plan indefinitely, as long as you stay within its limits. Upgrade when you need more sources, audit logging, or RBAC.
+  You can use the Free plan indefinitely, as long as you stay within its limits. Upgrade when you need more sources, audit logging, RBAC, or monthly usage credit.
 </Note>
 
 ## Managing your subscription
 
-Click **Manage subscription** in the billing page to open the Stripe Customer Portal. From there:
+Click **Manage subscription** in the billing page to open the customer portal. From there:
 
 - Switch between Pro and Team
 - Update payment method
@@ -51,4 +87,4 @@ Click **Manage subscription** in the billing page to open the Stripe Customer Po
 
 ## Refunds
 
-Subscription cancellations take effect at the end of the current period — no proration.
+Subscription cancellations take effect at the end of the current period — no proration. Purchased top-up credit is non-refundable but never expires.

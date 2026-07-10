@@ -66,9 +66,13 @@ agents, and chats first. The Default project can't be deleted.
 
 ## Projects and the API / widget
 
-The [Developer API](/api-reference/introduction) and the
-[embeddable widget](/platform/widget) operate in your organization's **Default**
-project. Sources, agents, and chat called over the API run within that scope. To
-target a different project today, use a separate organization, or scope a chat
-request to specific sources with `source_ids` (see
+The [Developer API](/api-reference/introduction) operates in your organization's
+**Default** project — sources, agents, and chat called over the API run within
+that scope. To target a different project today, use a separate organization, or
+scope a chat request to specific sources with `source_ids` (see
 [`GET /v1/sources`](/api-reference/endpoints/sources)).
+
+The [embeddable widget](/platform/widget) also runs in the Default project
+unless its JWT pins another one: sign a `project_id` claim to run the whole
+session — chat, history, and voice — inside that project. See
+[Pinning the widget to a project or sources](/platform/widget#pinning-the-widget-to-a-project-or-sources).

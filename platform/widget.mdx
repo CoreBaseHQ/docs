@@ -118,6 +118,51 @@ Required claim: **`sub`** (end-user ID, used in audit logs). The `role: "admin"`
 
 The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
 
+## Pinning the widget to a project or sources
+
+Every widget session runs inside exactly one [project](/platform/projects). By
+default that's your organization's **Default** project; to run it in another
+workspace, sign a **`project_id`** claim into the JWT:
+
+```php
+$payload = [
+    'sub'        => $current_user->id,
+    'project_id' => 'a1b2c3…',            // pin the session to this project
+    'exp'        => time() + 60 * 30,
+];
+```
+
+Copy the ID from **Settings → Projects** (the copy icon on the project's row).
+The pin covers the whole session — chat, conversation history, and voice all
+operate in the pinned project, and the assistant can only reach that project's
+sources. A `project_id` that doesn't belong to your organization is rejected
+with **403**.
+
+To narrow further **within** the project, add a **`source_ids`** claim — a list
+of source IDs the session may query (list yours with
+[`GET /v1/sources`](/api-reference/endpoints/sources)):
+
+```php
+$payload = [
+    'sub'        => $current_user->id,
+    'project_id' => 'a1b2c3…',
+    'source_ids' => ['9b1c…'],             // only these sources
+    'exp'        => time() + 60 * 30,
+];
+```
+
+Both claims are signed by **your** server, so the visitor can't change them —
+a tampered request can narrow the scope but never escape it. They also combine
+with the widget access policy you set in the panel (allowed sources, read-only),
+whichever is stricter wins.
+
+<Note>
+  Building a multi-workspace product on top of CoreBase — one project per
+  customer store, branch, or environment? Pin each embed with `project_id` and
+  the sessions stay fully apart: separate sources, separate history, separate
+  business context.
+</Note>
+
 ## Per-user message limits
 
 You can cap how many messages **each end-user** may send — useful to stop a
