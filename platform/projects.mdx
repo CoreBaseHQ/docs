@@ -70,9 +70,10 @@ The [Developer API](/api-reference/introduction) operates in your organization's
 **Default** project — sources, agents, and chat called over the API run within
 that scope. To target a different project today, use a separate organization, or
 scope a chat request to specific sources with `source_ids` (see
-[`GET /v1/sources`](/api-reference/endpoints/sources)).
+[`GET /api/v1/sources`](/api-reference/endpoints/sources)).
 
-The [embeddable widget](/platform/widget) also runs in the Default project
-unless its JWT pins another one: sign a `project_id` claim to run the whole
-session — chat, history, and voice — inside that project. See
-[Pinning the widget to a project or sources](/platform/widget#pinning-the-widget-to-a-project-or-sources).
+The [embeddable widget](/platform/widget) is scoped per project by its **widget
+key**, not by a JWT claim: each project has its own key, and whichever key's
+`publicId` you embed fixes the whole session — chat, history, and voice —
+inside that project. See
+[Scoping the widget to a project](/platform/widget#scoping-the-widget-to-a-project).

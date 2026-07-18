@@ -33,9 +33,9 @@ sources:
 |---|---|---|
 | `readonly` | `true` | When true, only `SELECT` and metadata queries are allowed. Strongly recommended. |
 | `no_lock` | `false` | Runs all reads with `READ UNCOMMITTED` isolation (equivalent to `WITH (NOLOCK)`). Useful on busy OLTP databases — trade-off: may read uncommitted rows. |
-| `normalize_turkish` | `false` | Turkish character normalization for legacy Turkish ERP databases (Turkish_CI_AS collation). |
+| `normalize_turkish` | `false` | Turkish character normalization for on-prem Turkish ERP databases (Turkish_CI_AS collation). |
 
-### Legacy SQL Server (2000 / 2008)
+### SQL Server 2000 / 2008
 
 CoreMCP auto-detects the SQL Server version on connect and rewrites queries:
 

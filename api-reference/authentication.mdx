@@ -52,11 +52,11 @@ Treat `cb_live_` tokens like database passwords:
 
 ```jsonc
 {
-  "mcp_query": true,        // POST /v1/chat/completions, GET /v1/agents
+  "mcp_query": true,        // POST /api/v1/chat/completions, GET /api/v1/agents
   "mcp_admin": false,       // reserved
-  "sources_read": true,     // GET /v1/sources
-  "sources_write": false,   // PATCH /v1/sources/* (future)
-  "agents_run": false       // POST /v1/agents/{id}/run, GET /v1/runs/{id}
+  "sources_read": true,     // GET /api/v1/sources
+  "sources_write": false,   // PATCH /api/v1/sources/* (future)
+  "agents_run": false       // POST /api/v1/agents/{id}/run, GET /api/v1/runs/{id}
 }
 ```
 
@@ -67,7 +67,7 @@ trigger automations. Toggle the rest off to enforce least privilege.
 
 Each token carries `per_minute` / `daily` / `monthly` request limits (set when
 you create it, defaults `60` / `1000` / `10000`). They apply across **all**
-`/v1/*` endpoints. When a limit is hit the API returns:
+`/api/v1/*` endpoints. When a limit is hit the API returns:
 
 ```
 HTTP/1.1 429 Too Many Requests

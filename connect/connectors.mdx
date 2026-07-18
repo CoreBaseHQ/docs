@@ -12,7 +12,7 @@ In **Panel → Sources → Add integration**, native sources (Microsoft 365) and
 Authentication runs through a **managed OAuth layer**: the OAuth tokens live there, not in CoreBase, and calls go through an authenticated proxy that injects and refreshes them. To your agents, a connected app behaves like any other API source.
 
 <Note>
-  SaaS connectors are a **cloud-relay** tier — auth and proxied calls pass through the connector cloud. For legacy/on-prem databases, the **sovereign** path via [CoreMCP](/coremcp/intro) keeps data on your own network. Pick the tier your compliance needs.
+  SaaS connectors are a **cloud-relay** tier — auth and proxied calls pass through the connector cloud. For on-prem databases, the **sovereign** path via [CoreMCP](/coremcp/intro) keeps data on your own network. Pick the tier your compliance needs.
 </Note>
 
 ## Available connectors

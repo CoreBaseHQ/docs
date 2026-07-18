@@ -21,7 +21,7 @@ Every company has its own dictionary. "Active customer" might mean *logged in th
     Slack threads, Microsoft 365 emails, and content from [connected SaaS apps](/connect/connectors) are embedded per tenant and retrieved at query time, with citations.
   </Card>
   <Card title="Schema relationships">
-    Foreign-key hints and virtual relationships you declare in the panel — so the agent writes correct joins even when a legacy DB has no FK constraints.
+    Foreign-key hints and virtual relationships you declare in the panel — so the agent writes correct joins even when the database has no FK constraints.
   </Card>
 </CardGroup>
 
@@ -43,9 +43,9 @@ The model gets your business context as part of every call — it doesn't guess 
 
 In the panel under **Semantic Layer**:
 
-- **Annotations** — one entry per column or table: business term, value map (`1 = Active, 0 = Cancelled`), example values, PII flag. The schema tree supports filtering and pagination for legacy databases with hundreds of tables.
+- **Annotations** — one entry per column or table: business term, value map (`1 = Active, 0 = Cancelled`), example values, PII flag. The schema tree supports filtering and pagination for databases with hundreds of tables.
 - **Glossary** — define tenant-wide terms once; every agent call sees them.
-- **Virtual relationships** — declare implicit joins your legacy DB doesn't enforce.
+- **Virtual relationships** — declare implicit joins your database doesn't enforce.
 - **Audit** — see when each entry was added and by whom.
 
 You curate; the agent uses what you've curated.

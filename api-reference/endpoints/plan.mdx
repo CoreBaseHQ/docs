@@ -1,5 +1,5 @@
 ---
-title: "GET /v1/plan"
+title: "GET /api/v1/plan"
 description: "Get the subscription plan attached to your token's organization."
 ---
 
@@ -8,7 +8,7 @@ Returns the current subscription tier and status for the organization the callin
 ## Request
 
 ```http
-GET /v1/plan HTTP/1.1
+GET /api/v1/plan HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
@@ -38,7 +38,7 @@ Standard authentication errors apply — see [Authentication → Errors](/api-re
 ### Gate a Pro-only feature
 
 ```js
-const res = await fetch("https://api.corebasehq.com/v1/plan", {
+const res = await fetch("https://api.corebasehq.com/api/v1/plan", {
   headers: { Authorization: `Bearer ${process.env.CB_LIVE}` },
 });
 const { plan } = await res.json();
@@ -54,7 +54,7 @@ import httpx
 
 def is_active(token: str) -> bool:
     r = httpx.get(
-        "https://api.corebasehq.com/v1/plan",
+        "https://api.corebasehq.com/api/v1/plan",
         headers={"Authorization": f"Bearer {token}"},
     )
     r.raise_for_status()

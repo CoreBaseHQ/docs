@@ -1,0 +1,66 @@
+---
+title: "Security model"
+description: "How CoreBase issues, rotates, and rate-limits every credential — API tokens and widget sessions alike."
+---
+
+CoreBase has two credential types, and they follow the same shape: **bearer tokens, short-lived where a human can leak them, long-lived where a backend controls them, and instantly revocable either way.** This page is the one-stop reference; the linked pages below cover the request/response details for each.
+
+## Two credential types
+
+| | `cb_live_` API tokens | Widget JWTs |
+|---|---|---|
+| Who holds it | Your backend (server-to-server) | Your frontend, minted per visitor by your backend |
+| Typical TTL | Long-lived (no forced expiry unless you set one) | Short-lived — **15–30 min recommended** |
+| Issued from | Panel → Security → API Tokens | Your own server, signed with the B2B secret |
+| Scope | Org-wide permissions (`mcp_query`, `sources_read`, …) | One end-user, one project, optionally one source allowlist |
+| Full reference | [Authentication](/api-reference/authentication) | [Embeddable widget](/platform/widget) |
+
+Both are plain bearer credentials: whoever holds the string can use it until it expires or is revoked. Neither is bound to a specific device or TLS session today — see [Sender-binding (DPoP)](#sender-binding-dpop) below for where that's headed.
+
+## TTL
+
+**API tokens** don't expire on their own — they're meant to live in a secret manager on infrastructure you control, so there's no `exp` to renew. Set an explicit `expires_at` at creation if you want one to lapse automatically (e.g. for a temporary integration).
+
+**Widget JWTs** are signed by *your* server, so you choose the `exp` — keep it short (15–30 min). A widget session is handed to a browser, which is a much less trusted environment than your backend: a short TTL bounds how long a copy-pasted or logged token stays useful. Pair a short TTL with `getAuthToken` so the widget refreshes quietly instead of the session just dying — see [token lifecycle and refresh](/platform/widget#token-lifecycle-and-refresh).
+
+<Warning>
+  The **`exp` claim is required**, not just recommended — CoreBase rejects any
+  widget JWT that doesn't carry one. Earlier versions of the backend verified
+  `exp` only when present, so a token signed without it never expired; that gap
+  is closed. Always include `exp` when you sign the token.
+</Warning>
+
+## Rotation
+
+Both credential types rotate the same way: **no overlap window.** The moment you rotate, the old secret stops verifying — there's no grace period where both the old and new secret work.
+
+- **API tokens:** hit **Regenerate** in the panel. In-flight requests using the old secret get `401` immediately; retry with the new one. See [Rotating](/api-reference/authentication#rotating).
+- **Widget B2B secret:** hit **Rotate secret** on the Widget page. Every JWT signed with the old secret — including ones already handed to visitors' browsers — fails signature verification on its next request. `publicId` doesn't change, only the signing secret, so once your token-minting endpoint picks up the new secret, sessions recover on their next `getAuthToken` call.
+
+Rotate immediately if a secret may have leaked — e.g. it ended up in a client bundle, a log line, or a support ticket by mistake. There's no cost to rotating defensively; the only effect is that anything still using the old secret gets a clean `401`.
+
+## Rate limiting
+
+Both credential types are rate-limited, and both return the same shape on a hit:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 37
+
+{ "detail": { "error": "rate_limit_exceeded", "period": "per_minute", "limit": 60, "retry_after_seconds": 37 } }
+```
+
+- **API tokens** carry `per_minute` / `daily` / `monthly` limits set when you create the token (defaults `60` / `1,000` / `10,000`) — see [full table](/platform/tokens#rate-limits).
+- **Widget sessions** are limited **per end-user**, not per token — you set `daily_message_limit`, `monthly_message_limit`, and `per_minute_message_limit` as claims in each JWT you sign, so one visitor can never burn through your whole budget. See [per-user message limits](/platform/widget#per-user-message-limits).
+
+Always honor `Retry-After` and back off exponentially. Rejected requests don't count against the bucket.
+
+## Sender-binding (DPoP)
+
+Today, both credential types are classic bearer tokens — anyone who has the string can use it, full stop, until it's rotated or expires. That's standard for API tokens held by a backend you control, but it's a real limitation for tokens that end up in a browser.
+
+**Under consideration for a future release:** [DPoP](https://datatracker.ietf.org/doc/html/rfc9449) (Demonstrating Proof-of-Possession) — binding a token to a public/private keypair generated client-side, so a copied bearer string alone isn't enough to replay a request; the caller also has to prove it holds the matching private key. This isn't implemented yet and isn't scheduled — it's noted here so the direction is visible, not as a commitment. If sender-binding matters for your threat model today, the mitigation is what's already available: short TTLs, `getAuthToken` refresh, and rotating on any suspected leak.
+
+## Transport
+
+Every request — panel, widget, and Developer API — runs over TLS 1.2+. What happens to your data *after* the wire is a separate question from token security; see [Zero Raw Data Egress](/concepts/zero-raw-data-egress) for how that differs across deployment modes.

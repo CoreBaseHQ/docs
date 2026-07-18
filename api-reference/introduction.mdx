@@ -3,12 +3,12 @@ title: "Developer API"
 description: "Call CoreBase from your own apps with `cb_live_` tokens."
 ---
 
-The Developer API is **OpenAI-compatible**. Point any OpenAI SDK at `https://api.corebasehq.com/v1`, pass a `cb_live_` token, and it just works — chat completions stream in the standard `chat.completion.chunk` SSE format. The model has access to your tenant's data sources, Unified Context, and access policies.
+The Developer API is **OpenAI-compatible**. Point any OpenAI SDK at `https://api.corebasehq.com/api/v1`, pass a `cb_live_` token, and it just works — chat completions stream in the standard `chat.completion.chunk` SSE format. The model has access to your tenant's data sources, Unified Context, and access policies.
 
 ## Base URL
 
 ```
-https://api.corebasehq.com/v1
+https://api.corebasehq.com/api/v1
 ```
 
 For self-hosted deployments, replace with your CoreBase domain.
@@ -17,13 +17,13 @@ For self-hosted deployments, replace with your CoreBase domain.
 
 <CardGroup cols={2}>
   <Card title="Chat completions" icon="messages" href="/api-reference/endpoints/chat">
-    OpenAI-compatible streaming chat. `POST /v1/chat/completions`.
+    OpenAI-compatible streaming chat. `POST /api/v1/chat/completions`.
   </Card>
   <Card title="Sources" icon="database" href="/api-reference/endpoints/sources">
-    List the data sources your agents and chat can reach. `GET /v1/sources`.
+    List the data sources your agents and chat can reach. `GET /api/v1/sources`.
   </Card>
   <Card title="Agents & runs" icon="robot" href="/api-reference/endpoints/agents">
-    Trigger governed agent flows and poll their runs. `POST /v1/agents/{id}/run`.
+    Trigger governed agent flows and poll their runs. `POST /api/v1/agents/{id}/run`.
   </Card>
   <Card title="Plan" icon="layers" href="/api-reference/endpoints/plan">
     Check the subscription tier attached to your token's organization.
@@ -37,7 +37,7 @@ Using the official OpenAI SDK:
 ```python
 from openai import OpenAI
 
-client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/v1")
+client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/api/v1")
 
 stream = client.chat.completions.create(
     model="corebase",
@@ -51,7 +51,7 @@ for chunk in stream:
 Or with `curl`:
 
 ```bash
-curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
+curl -N -X POST https://api.corebasehq.com/api/v1/chat/completions \
   -H "Authorization: Bearer cb_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -70,7 +70,7 @@ You bring your own LLM provider API key — Anthropic, OpenAI, Gemini, Groq, Mis
 The Developer API is versioned at the URL prefix:
 
 ```
-https://api.corebasehq.com/v1/chat/completions
+https://api.corebasehq.com/api/v1/chat/completions
 ```
 
 We avoid breaking changes within a major version. When `v2` ships, `v1` stays online for at least 12 months with deprecation warnings in the `Sunset` header.
@@ -99,6 +99,6 @@ The body is JSON for any non-2xx response. `4xx`s carry a stable `detail.error` 
     Create tokens, scope permissions, rotate secrets.
   </Card>
   <Card title="Chat endpoint" icon="terminal" href="/api-reference/endpoints/chat">
-    Full request / response spec for `POST /v1/chat/completions`.
+    Full request / response spec for `POST /api/v1/chat/completions`.
   </Card>
 </CardGroup>

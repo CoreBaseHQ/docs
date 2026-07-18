@@ -3,7 +3,7 @@ title: "Embeddable widget"
 description: "Drop CoreBase chat into your product with one script tag + one init call."
 ---
 
-The CoreBase widget is a Preact-based chat UI that lives in a shadow-DOM-isolated container, talks to the FastAPI backend over a server-signed JWT, and weighs ~67KB gzipped. Designed for legacy CRM / ERP panels — PHP included.
+The CoreBase widget is a Preact-based chat UI that lives in a shadow-DOM-isolated container, talks to the FastAPI backend over a server-signed JWT, and weighs ~67KB gzipped. Designed to drop into CRM / ERP panels — PHP included.
 
 ## How it works
 
@@ -54,7 +54,7 @@ window.CorebaseWidget.init({
 ```ts
 window.CorebaseWidget.init({
   apiBaseUrl: string,       // CoreBase backend URL
-  publicId?: string,        // Tenant public ID (Settings → Widget)
+  publicId?: string,        // Tenant public ID (panel → Widget)
   authToken?: string,       // Static JWT
   getAuthToken?: () => Promise<string> | string,  // Async fetcher for refresh
   title?: string,           // Header text — default "CoreBase"
@@ -94,7 +94,7 @@ user's chats. Nothing to enable — it's on whenever the widget is authenticated
 
 ## Generating the JWT (server side)
 
-Sign with your **B2B JWT secret** (panel → Settings → Widget → Rotate secret). The secret never reaches the browser.
+Sign with your **B2B JWT secret** (panel → Widget → Rotate secret). The secret never reaches the browser.
 
 ```php
 <?php
@@ -114,53 +114,68 @@ $jwt = JWT::encode($payload, $secret, 'HS256');
 ?>
 ```
 
-Required claim: **`sub`** (end-user ID, used in audit logs). The `role: "admin"` claim promotes to admin; otherwise the user is treated as a regular member. `user_attrs` feeds into [access policies](/concepts/rbac).
+Required claims: **`sub`** (end-user ID, used in audit logs) and **`exp`** — a token signed without an expiry is rejected outright, it doesn't just live forever. The `role: "admin"` claim promotes to admin; otherwise the user is treated as a regular member. `user_attrs` feeds into [access policies](/concepts/rbac). See [Security model](/api-reference/security) for the full TTL/rotation/rate-limit picture.
 
 The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
 
-## Pinning the widget to a project or sources
+## Token lifecycle and refresh
 
-Every widget session runs inside exactly one [project](/platform/projects). By
-default that's your organization's **Default** project; to run it in another
-workspace, sign a **`project_id`** claim into the JWT:
+Keep the JWT **short-lived** — 15–30 minutes is a good default (the `exp` claim in the example above). A short TTL limits how long a leaked token stays useful, and the widget is built around refreshing quietly rather than needing a long-lived one.
 
-```php
-$payload = [
-    'sub'        => $current_user->id,
-    'project_id' => 'a1b2c3…',            // pin the session to this project
-    'exp'        => time() + 60 * 30,
-];
+**Refreshing:** pass `getAuthToken` instead of a static `authToken`, and the widget calls it **fresh before every single request** — it never caches or reuses a token internally, so your endpoint is the source of truth for "is this still valid":
+
+```ts
+window.CorebaseWidget.init({
+  apiBaseUrl: "https://api.corebasehq.com",
+  publicId: "YOUR_TENANT_PUBLIC_ID",
+  getAuthToken: () => fetch("/api/corebase-token").then((r) => r.text()),
+});
 ```
 
-Copy the ID from **Settings → Projects** (the copy icon on the project's row).
-The pin covers the whole session — chat, conversation history, and voice all
-operate in the pinned project, and the assistant can only reach that project's
-sources. A `project_id` that doesn't belong to your organization is rejected
-with **403**.
+Your `/api/corebase-token` endpoint re-runs the signing code above (fresh `exp`, current user) on every call. If minting is cheap, sign a new token every time; if not, cache a valid one server-side and only re-sign once it's close to `exp`.
 
-To narrow further **within** the project, add a **`source_ids`** claim — a list
+**On expiry:** there's no automatic retry inside the widget — it doesn't catch a `401` and re-ask for a token mid-request. With `getAuthToken`, that's fine in practice: since a fresh token is fetched before every call, an already-expired token simply doesn't get sent as long as your endpoint returns a currently-valid one. With a **static** `authToken`, once `exp` passes every subsequent call fails until the page is reloaded with a new token — prefer `getAuthToken` for anything longer than a single page view.
+
+**Rotating the B2B secret:** rotating in the panel (**Widget → Rotate secret**) issues a new secret and invalidates every JWT signed with the old one **immediately** — the same no-overlap behavior as [API token rotation](/api-reference/authentication#rotating). `publicId` stays the same across a rotation; only the signing secret changes, so existing embeds keep pointing at the right tenant once your token endpoint starts signing with the new secret. Rotate if the secret may have leaked (e.g. it ended up in a client bundle by mistake) — every active session gets a `401` on its next request.
+
+## Scoping the widget to a project
+
+Every widget session runs inside exactly one [project](/platform/projects) —
+fixed by which widget key's `publicId` you embed, not by anything in the JWT.
+Each project has its own widget key: switch your active project in the panel,
+then open **Widget** to see or generate that project's key. There's no
+`project_id` claim to sign, and nothing in the token can redirect a session to
+a different project — the boundary is which key you used.
+
+To run against a different project — a second store, a staging environment,
+a different customer workspace — switch to that project in the panel and embed
+**its own** key's `publicId`.
+
+To narrow **within** a project's sources, add a **`source_ids`** claim — a list
 of source IDs the session may query (list yours with
-[`GET /v1/sources`](/api-reference/endpoints/sources)):
+[`GET /api/v1/sources`](/api-reference/endpoints/sources)):
 
 ```php
 $payload = [
     'sub'        => $current_user->id,
-    'project_id' => 'a1b2c3…',
     'source_ids' => ['9b1c…'],             // only these sources
     'exp'        => time() + 60 * 30,
 ];
 ```
 
-Both claims are signed by **your** server, so the visitor can't change them —
-a tampered request can narrow the scope but never escape it. They also combine
-with the widget access policy you set in the panel (allowed sources, read-only),
-whichever is stricter wins.
+This claim is signed by **your** server, so the visitor can't change it — a
+tampered request can narrow the scope but never escape it. It also combines
+with the widget access policy you set in the panel (allowed sources,
+read-only) — whichever is stricter wins. If no sources are allowed there yet,
+the widget can't reach any data regardless of what this claim says.
 
 <Note>
   Building a multi-workspace product on top of CoreBase — one project per
-  customer store, branch, or environment? Pin each embed with `project_id` and
-  the sessions stay fully apart: separate sources, separate history, separate
-  business context.
+  customer store, branch, or environment? Give each project its own widget key
+  and embed with that project's `publicId`. Sessions stay fully apart —
+  separate sources, separate history, separate business context — because the
+  boundary is which key you used, not a claim a visitor's browser could see or
+  tamper with.
 </Note>
 
 ## Per-user message limits
@@ -200,7 +215,7 @@ as a typed one.
   configured — without it, the limits are accepted but not enforced.
 </Note>
 
-To build a per-user usage dashboard, call **`GET /v1/usage`** with a
+To build a per-user usage dashboard, call **`GET /api/v1/usage`** with a
 [`cb_live_` token](/api-reference/authentication): it returns each end-user's
 live `daily` / `monthly` / `per_minute` counts. Since you signed the limits,
 compute `remaining = your_limit − used`.

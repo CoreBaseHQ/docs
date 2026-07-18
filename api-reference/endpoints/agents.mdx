@@ -14,7 +14,7 @@ the API can't bypass read-only/approval rules.
 ## List agents
 
 ```http
-GET /v1/agents HTTP/1.1
+GET /api/v1/agents HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
@@ -43,13 +43,13 @@ Requires `mcp_query`. Returns the agent flows in your default
 ## Trigger a run
 
 ```http
-POST /v1/agents/{flow_id}/run HTTP/1.1
+POST /api/v1/agents/{flow_id}/run HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
 
 Requires the `agents_run` permission. Returns immediately — the run executes
-asynchronously; poll `GET /v1/runs/{run_id}` for the result.
+asynchronously; poll `GET /api/v1/runs/{run_id}` for the result.
 
 ```json
 {
@@ -73,7 +73,7 @@ flow returns `409` (the API can't bypass the same availability rules as the pane
 ## Poll run status
 
 ```http
-GET /v1/runs/{run_id} HTTP/1.1
+GET /api/v1/runs/{run_id} HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
@@ -111,7 +111,7 @@ the same boundary as triggering runs.
 import time, httpx
 
 H = {"Authorization": "Bearer cb_live_xxx"}
-base = "https://api.corebasehq.com/v1"
+base = "https://api.corebasehq.com/api/v1"
 
 run = httpx.post(f"{base}/agents/a1b2…/run", headers=H).json()
 run_id = run["run_id"]

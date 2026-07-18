@@ -24,7 +24,7 @@ Connections are **read-only at the session level** — the pool runs with `defau
   Cloud-direct means query results travel to CoreBase Cloud (encrypted in transit, encrypted at rest). For databases that must never egress, use [CoreMCP](/coremcp/intro) (cloud-relay or air-gap) instead.
 </Warning>
 
-### Legacy & on-prem (via CoreMCP)
+### On-prem databases (via CoreMCP)
 
 For SQL Server, Firebird, and anything behind a firewall, run the open-source [CoreMCP](/coremcp/intro) agent inside your network. It holds the credentials, runs queries locally, and dials outbound only — no inbound ports. See [Connect a database with CoreMCP](/coremcp/connect).
 
@@ -53,7 +53,7 @@ Connect 50+ apps (Jira, Gmail, GitHub, Notion, Stripe, HubSpot, Zendesk…) thro
 | Mode | Where rows live | Use when |
 |---|---|---|
 | **Cloud-direct** | Travel to CoreBase Cloud (encrypted) | The DB is reachable and egress is acceptable |
-| **Cloud-relay** | Stay local; CoreMCP runs queries on-prem | Standard for legacy / firewalled DBs |
+| **Cloud-relay** | Stay local; CoreMCP runs queries on-prem | Standard for on-prem / firewalled DBs |
 | **Self-hosted** | Your VPC | No third-party touch |
 | **Air-gap** | Never leave your perimeter | Defense, healthcare, banking |
 

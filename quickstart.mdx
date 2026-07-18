@@ -3,7 +3,7 @@ title: "Quickstart"
 description: "Connect a source and ship your first agent in a few minutes."
 ---
 
-The fastest path: sign in, add a source, build an agent. The on-prem CoreMCP path (for legacy and firewalled databases) follows.
+The fastest path: sign in, add a source, build an agent. The on-prem CoreMCP path (for databases without an API, or ones behind a firewall) follows.
 
 ## Build an agent in the cloud
 
@@ -32,7 +32,7 @@ The fastest path: sign in, add a source, build an agent. The on-prem CoreMCP pat
   </Step>
 </Steps>
 
-## Reach a legacy or firewalled database (CoreMCP)
+## Reach a database without an API, or one behind a firewall (CoreMCP)
 
 For SQL Server, Firebird, or any database behind a firewall, run the open-source CoreMCP agent inside your network. It holds the credentials, runs queries locally, and dials outbound only.
 
@@ -80,6 +80,6 @@ For SQL Server, Firebird, or any database behind a firewall, run the open-source
     Annotations, glossary, Query Memory.
   </Card>
   <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    OpenAI-compatible `POST /v1/chat/completions`.
+    OpenAI-compatible `POST /api/v1/chat/completions`.
   </Card>
 </CardGroup>

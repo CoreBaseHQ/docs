@@ -6,7 +6,9 @@ description: "Issue `cb_live_` tokens for the Developer API."
 The Developer API uses `cb_live_` bearer tokens — long-lived secrets that authenticate machine-to-machine calls from your backend.
 
 <Note>
-  API tokens are a **business-tier feature**. Free organizations see the page but can't create tokens until they upgrade.
+  API tokens are available on **every plan, including Free** — no upgrade
+  needed to start building. Actual usage is bounded by the per-token
+  [rate limits](#rate-limits) and your prepaid balance, not your tier.
 </Note>
 
 ## Creating a token
@@ -26,12 +28,12 @@ Lost it? Hit **Regenerate** to issue a new secret. The old one is immediately in
 
 | Permission | What it allows |
 |---|---|
-| `mcp_query` | Calling `POST /v1/chat` (default on) |
+| `mcp_query` | Calling `POST /api/v1/chat` (default on) |
 | `mcp_admin` | Reserved — admin-scope CoreMCP commands |
 | `sources_read` | Listing connected data sources (default on) |
 | `sources_write` | Modifying source configuration |
 
-Tokens lacking `mcp_query` get `403` on `POST /v1/chat`.
+Tokens lacking `mcp_query` get `403` on `POST /api/v1/chat`.
 
 ## Rate limits
 

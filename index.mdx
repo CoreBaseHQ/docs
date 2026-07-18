@@ -5,6 +5,8 @@ description: "Build governed AI agents over your company's data — databases, A
 
 CoreBase is a **governed AI agent platform**: connect your data and build agents on top of it — agents that query, act, and run on a schedule or an event. Read-only by default, audited end to end.
 
+Built for teams shipping AI features into their own product — for their own customers' data.
+
 Connect a cloud database in minutes. When you need it, the same agents reach the systems most tools can't — the SQL Server behind a firewall, the air-gapped network an auditor won't open — through [CoreMCP](/coremcp/intro), so raw rows never leave your perimeter.
 
 ## Where to start
@@ -14,7 +16,38 @@ Connect a cloud database in minutes. When you need it, the same agents reach the
     The visual builder. Drop a trigger, an agent step, and an action; connect them; run it. Schedule it or fire it on an event.
   </Card>
   <Card title="Connect a data source" icon="database" href="/connect/sources">
-    Paste a Postgres DSN, register a CoreMCP agent for legacy databases, wire a REST/GraphQL API, or connect a SaaS app via managed OAuth.
+    Paste a Postgres DSN, register a CoreMCP agent for a database without an API, wire a REST/GraphQL API, or connect a SaaS app via managed OAuth.
+  </Card>
+</CardGroup>
+
+## Call it from your own apps
+
+CoreBase also exposes an OpenAI-compatible endpoint, so you can drive the same governed agents from your code:
+
+```bash
+# 1. Get a CoreBase API token (panel → Security → API Tokens)
+export COREBASE_API_KEY=cb_live_a1b2c3...
+
+# 2. Add your own LLM provider key in the panel
+#    (Settings → LLM keys → paste Anthropic / OpenAI / Gemini key)
+
+# 3. Ask — OpenAI-compatible streaming response
+curl -N -X POST https://api.corebasehq.com/api/v1/chat/completions \
+  -H "Authorization: Bearer $COREBASE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "corebase",
+    "messages": [{"role":"user","content":"Top 5 customers by revenue this quarter?"}],
+    "stream": true
+  }'
+```
+
+<CardGroup cols={2}>
+  <Card title="SDKs" icon="package" href="/api-reference/sdks">
+    OpenAI-compatible today — works with the OpenAI SDK in any language. Official `@corebasehq/node` is coming soon.
+  </Card>
+  <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
+    Drop-in Preact widget for any page. Server-signed JWT auth.
   </Card>
 </CardGroup>
 
@@ -35,11 +68,11 @@ Connect a cloud database in minutes. When you need it, the same agents reach the
   </Card>
 </CardGroup>
 
-## On-prem, legacy & air-gapped systems
+## Reach anything, on-prem or air-gapped
 
 <CardGroup cols={2}>
-  <Card title="Legacy databases" icon="database" href="/coremcp/intro">
-    SQL Server 2000+ with Turkish_CI_AS collation. Firebird for Delphi-era ERPs (in active development). The drivers other tools refuse to ship.
+  <Card title="Databases without an API" icon="database" href="/coremcp/intro">
+    SQL Server 2000+. Firebird for Delphi-era ERPs (in active development). Native drivers, not a REST wrapper someone forgot to build — the connections other tools give up on.
   </Card>
   <Card title="Behind the firewall" icon="server" href="/concepts/zero-raw-data-egress">
     Cloud-direct (paste a DSN) · Cloud-relay (CoreMCP on-prem, outbound 443 only) · Self-hosted (your VPC) · Air-gap (Enterprise Container). Pick the egress posture your compliance needs.
@@ -49,36 +82,5 @@ Connect a cloud database in minutes. When you need it, the same agents reach the
   </Card>
   <Card title="Unified Context" icon="brain" href="/concepts/corporate-memory">
     Schema annotations and a business glossary teach the agent what `flag_2_new` means and how `MRR` is computed. Query Memory sharpens the SQL over time — without touching raw rows.
-  </Card>
-</CardGroup>
-
-## Call it from your own apps
-
-CoreBase also exposes an OpenAI-compatible endpoint, so you can drive the same governed agents from your code:
-
-```bash
-# 1. Get a CoreBase API token (panel → Settings → Developer)
-export COREBASE_API_KEY=cb_live_a1b2c3...
-
-# 2. Add your own LLM provider key in the panel
-#    (Settings → LLM keys → paste Anthropic / OpenAI / Gemini key)
-
-# 3. Ask — OpenAI-compatible streaming response
-curl -N -X POST https://api.corebasehq.com/v1/chat/completions \
-  -H "Authorization: Bearer $COREBASE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "corebase",
-    "messages": [{"role":"user","content":"Top 5 customers by revenue this quarter?"}],
-    "stream": true
-  }'
-```
-
-<CardGroup cols={2}>
-  <Card title="Developer API" icon="code" href="/api-reference/introduction">
-    OpenAI-compatible `POST /v1/chat/completions` with `cb_live_` tokens. Bring your own LLM key.
-  </Card>
-  <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
-    Drop-in Preact widget for any page. Server-signed JWT auth.
   </Card>
 </CardGroup>

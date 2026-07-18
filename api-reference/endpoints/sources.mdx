@@ -1,5 +1,5 @@
 ---
-title: "GET /v1/sources"
+title: "GET /api/v1/sources"
 description: "List the data sources your agents and chat can reach."
 ---
 
@@ -12,7 +12,7 @@ Requires the `sources_read` permission.
 ## Request
 
 ```http
-GET /v1/sources HTTP/1.1
+GET /api/v1/sources HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
@@ -46,7 +46,7 @@ No body, no query parameters.
 ```python
 from openai import OpenAI
 
-client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/v1")
+client = OpenAI(api_key="cb_live_xxx", base_url="https://api.corebasehq.com/api/v1")
 
 stream = client.chat.completions.create(
     model="corebase",

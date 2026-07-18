@@ -9,7 +9,7 @@
     "dark": "#000000"
   },
   "appearance": {
-    "default": "light"
+    "default": "dark"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -99,7 +99,9 @@
             "group": "Developer API",
             "pages": [
               "api-reference/introduction",
-              "api-reference/authentication"
+              "api-reference/authentication",
+              "api-reference/sdks",
+              "api-reference/security"
             ]
           },
           {
