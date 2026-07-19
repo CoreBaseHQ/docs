@@ -67,9 +67,10 @@ agents, and chats first. The Default project can't be deleted.
 ## Projects and the API / widget
 
 The [Developer API](/api-reference/introduction) operates in your organization's
-**Default** project — sources, agents, and chat called over the API run within
-that scope. To target a different project today, use a separate organization, or
-scope a chat request to specific sources with `source_ids` (see
+**Default** project unless you say otherwise: list your workspaces with
+`GET /api/v1/projects`, then pass a **`project_id`** — as a query parameter on
+the sources/agents/runs endpoints, or in the chat completion body — to target
+any project. Narrow further within a project with `source_ids` (see
 [`GET /api/v1/sources`](/api-reference/endpoints/sources)).
 
 The [embeddable widget](/platform/widget) is scoped per project by its **widget

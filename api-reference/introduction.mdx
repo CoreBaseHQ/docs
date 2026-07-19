@@ -23,7 +23,8 @@ For self-hosted deployments, replace with your CoreBase domain.
     List the data sources your agents and chat can reach. `GET /api/v1/sources`.
   </Card>
   <Card title="Agents & runs" icon="robot" href="/api-reference/endpoints/agents">
-    Trigger governed agent flows and poll their runs. `POST /api/v1/agents/{id}/run`.
+    Trigger governed agent flows, poll their runs, and decide approval gates
+    from your own UI. `POST /api/v1/agents/{id}/run`.
   </Card>
   <Card title="Plan" icon="layers" href="/api-reference/endpoints/plan">
     Check the subscription tier attached to your token's organization.

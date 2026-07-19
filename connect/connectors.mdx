@@ -15,6 +15,10 @@ Authentication runs through a **managed OAuth layer**: the OAuth tokens live the
   SaaS connectors are a **cloud-relay** tier — auth and proxied calls pass through the connector cloud. For on-prem databases, the **sovereign** path via [CoreMCP](/coremcp/intro) keeps data on your own network. Pick the tier your compliance needs.
 </Note>
 
+<Note>
+  Connecting here creates **one shared account for the whole org** — every chat and every agent uses it. Embedding the widget for external end-users and want each visitor to link their *own* Gmail/Jira/etc. instead? See [Connected accounts](/platform/widget#connected-accounts).
+</Note>
+
 ## Available connectors
 
 50+ apps across the categories below, with more added regularly. Browse the full grid at [corebasehq.com/integrations](https://corebasehq.com/integrations).

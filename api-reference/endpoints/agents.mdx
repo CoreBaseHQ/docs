@@ -1,6 +1,6 @@
 ---
 title: "Agents & runs"
-description: "List agent flows, trigger governed runs, and poll their status."
+description: "List agent flows, trigger governed runs, poll status, and decide approval gates."
 ---
 
 Beyond chat, you can trigger your **agent flows** — multi-step, governed
@@ -8,37 +8,47 @@ automations that run durably on CoreBase's execution backend (read-only by
 default, with approval gates and audit). Build flows visually in the panel, then
 run them programmatically.
 
-The flow runs under its own project scope and the same governance as the panel —
+The flow runs under its project scope and the same governance as the panel —
 the API can't bypass read-only/approval rules.
+
+Every endpoint below accepts an optional **`project_id`** query parameter
+(from `GET /api/v1/projects`); omit it to operate in your default
+[project](/platform/projects).
 
 ## List agents
 
 ```http
-GET /api/v1/agents HTTP/1.1
+GET /api/v1/agents?project_id=p1a2…&limit=100 HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
 
-Requires `mcp_query`. Returns the agent flows in your default
-[project](/platform/projects).
+Requires `mcp_query`. Paginated: pass `limit` (1–200, default 100) and the
+previous page's `next_cursor` as `cursor`.
 
 ```json
-[
-  {
-    "id": "a1b2…",
-    "name": "Daily revenue digest",
-    "status": "active",
-    "is_enabled": true
-  }
-]
+{
+  "data": [
+    {
+      "id": "a1b2…",
+      "name": "Daily revenue digest",
+      "status": "active",
+      "is_enabled": true,
+      "project_id": "p1a2…"
+    }
+  ],
+  "next_cursor": null
+}
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `string` | Flow id — use it to trigger a run |
-| `name` | `string` | Flow name |
-| `status` | `"draft" \| "active" \| "paused"` | Lifecycle status |
-| `is_enabled` | `boolean` | Whether triggers are enabled |
+| `data[].id` | `string` | Flow id — use it to trigger a run |
+| `data[].name` | `string` | Flow name |
+| `data[].status` | `"draft" \| "active" \| "paused"` | Lifecycle status |
+| `data[].is_enabled` | `boolean` | Whether triggers are enabled |
+| `data[].project_id` | `string` | The project the flow belongs to |
+| `next_cursor` | `string \| null` | Pass as `cursor` for the next page |
 
 ## Trigger a run
 
@@ -65,9 +75,9 @@ flow returns `409` (the API can't bypass the same availability rules as the pane
 | Status | Meaning |
 |---|---|
 | `403` | Token lacks `agents_run` permission |
-| `404` | No agent flow with that id in your organization |
+| `404` | No agent flow with that id in the project |
 | `409` | Flow isn't runnable (draft, paused, or disabled) |
-| `503` | Execution backend not configured |
+| `503` | Agent execution unavailable |
 | `502` | Run could not be started |
 
 ## Poll run status
@@ -105,6 +115,34 @@ the same boundary as triggering runs.
 | `steps` | `array` | Per-node execution trace |
 | `started_at` / `ended_at` | `string \| null` | ISO timestamps |
 
+## Approve or reject a paused run
+
+When a run hits an **approval gate**, its status becomes `awaiting_approval` and
+it waits for a human decision. You can decide from the panel — or from the API,
+so you can build the approval step into **your own** product's UI:
+
+```http
+POST /api/v1/runs/{run_id}/approve HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+```http
+POST /api/v1/runs/{run_id}/reject HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+Both return `204 No Content`. **Approve** resumes the flow from where it paused;
+**reject** ends it without taking the gated action. Requires the `agents_run`
+permission.
+
+| Status | Meaning |
+|---|---|
+| `404` | No run with that id in the project |
+| `409` | Run isn't awaiting approval (already decided, finished, or still running) |
+| `503` | Agent execution unavailable |
+
 ## End-to-end
 
 ```python
@@ -118,13 +156,11 @@ run_id = run["run_id"]
 
 while True:
     r = httpx.get(f"{base}/runs/{run_id}", headers=H).json()
-    if r["status"] in ("succeeded", "failed", "awaiting_approval"):
+    if r["status"] == "awaiting_approval":
+        # Your own approval logic/UI decides here:
+        httpx.post(f"{base}/runs/{run_id}/approve", headers=H)
+    elif r["status"] in ("succeeded", "failed"):
         print(r["status"], r.get("output") or r.get("error"))
         break
     time.sleep(2)
 ```
-
-<Note>
-  Runs that hit an **approval gate** return `awaiting_approval`. Approve or reject
-  them from the panel; the run resumes from where it paused.
-</Note>

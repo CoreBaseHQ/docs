@@ -3,7 +3,7 @@ title: "GET /api/v1/sources"
 description: "List the data sources your agents and chat can reach."
 ---
 
-Returns the queryable data sources connected to your organization — databases,
+Returns the queryable data sources connected to a project — databases,
 REST/GraphQL APIs, SaaS connectors, and on-prem CoreMCP sources. Use the `id`
 values to scope a chat request via `source_ids`.
 
@@ -12,34 +12,48 @@ Requires the `sources_read` permission.
 ## Request
 
 ```http
-GET /api/v1/sources HTTP/1.1
+GET /api/v1/sources?project_id=p1a2…&limit=100 HTTP/1.1
 Host: api.corebasehq.com
 Authorization: Bearer cb_live_xxx
 ```
 
-No body, no query parameters.
+| Query parameter | Type | Description |
+|---|---|---|
+| `project_id` | `string` (optional) | List sources in this [project](/platform/projects). Omit for the default project. Ids come from `GET /api/v1/projects`. |
+| `limit` | `integer` (optional) | Page size, 1–200. Default 100. |
+| `cursor` | `string` (optional) | Opaque cursor from a previous page's `next_cursor`. |
 
 ## Response
 
 ```json
-[
-  { "id": "9b1c…", "name": "erp_prod", "kind": "database" },
-  { "id": "3f7a…", "name": "Stripe", "kind": "api" },
-  { "id": "c2d8…", "name": "Jira", "kind": "nango" }
-]
+{
+  "data": [
+    { "id": "9b1c…", "name": "erp_prod", "kind": "database", "project_id": "p1a2…" },
+    { "id": "3f7a…", "name": "Stripe", "kind": "api", "project_id": "p1a2…" },
+    { "id": "c2d8…", "name": "Jira", "kind": "nango", "project_id": "p1a2…" }
+  ],
+  "next_cursor": null
+}
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `string` | Source id — pass in `source_ids` to scope a chat request |
-| `name` | `string` | Human-friendly source name |
-| `kind` | `"database" \| "api" \| "coremcp" \| "nango"` | Connection type |
+| `data[].id` | `string` | Source id — pass in `source_ids` to scope a chat request |
+| `data[].name` | `string` | Human-friendly source name |
+| `data[].kind` | `"database" \| "api" \| "coremcp" \| "nango"` | Connection type |
+| `data[].project_id` | `string` | The project the source belongs to |
+| `next_cursor` | `string \| null` | Pass as `cursor` to fetch the next page; `null` on the last page |
 
-<Note>
-  The list reflects your organization's default [project](/platform/projects).
-  Sources, agents, and chat all run within that scope unless you narrow further
-  with `source_ids`.
-</Note>
+## Discover projects
+
+```http
+GET /api/v1/projects HTTP/1.1
+Host: api.corebasehq.com
+Authorization: Bearer cb_live_xxx
+```
+
+Returns `[{ "id", "name", "is_default" }]` — every endpoint that takes a
+`project_id` uses these ids. Requires the `mcp_query` permission.
 
 ## Scope a chat request
 
@@ -52,7 +66,10 @@ stream = client.chat.completions.create(
     model="corebase",
     messages=[{"role": "user", "content": "Open invoices over 30 days?"}],
     stream=True,
-    extra_body={"source_ids": ["9b1c…"]},  # only the ERP database
+    extra_body={
+        "project_id": "p1a2…",      # run inside this workspace
+        "source_ids": ["9b1c…"],    # only the ERP database
+    },
 )
 ```
 
@@ -60,5 +77,7 @@ stream = client.chat.completions.create(
 
 | Status | Meaning |
 |---|---|
+| `400` | Invalid `cursor` |
 | `401` | Missing or invalid token |
 | `403` | Token lacks `sources_read` permission |
+| `404` | No project with that `project_id` in your organization |

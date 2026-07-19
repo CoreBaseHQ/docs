@@ -68,6 +68,7 @@ window.CorebaseWidget.init({
   voiceEnabled?: boolean,   // Show the mic button — configure voice in the panel first
   theme?: "dark" | "light" | "auto",  // Color theme — "auto" follows the OS. Default "dark"
   locale?: "en" | "tr",     // UI language — omit to auto-detect from the browser
+  accountsPortalUrl?: string,  // Hosted "connected accounts" page — see below. Default corebasehq.com/connect/accounts
 });
 
 window.CorebaseWidget.destroy();  // Tear down and remove from DOM
@@ -267,6 +268,66 @@ $payload = [
 
 The enforcement lives in the API you connect; CoreBase guarantees the identity it
 forwards is the one you signed.
+
+## Connected accounts
+
+The section above scopes **your own** API by an identity you sign — useful when
+you already have a backend with per-user data. For third-party SaaS apps (Gmail,
+Jira, and 50+ others), there's no header to template: the org either has one
+shared Nango connection, or it doesn't have access at all. **Connected accounts**
+closes that gap — each visitor links their **own** account, and the assistant
+acts only on it. No claim, no template: the isolation is the OAuth grant itself,
+so it works identically across every provider with zero setup per app.
+
+<Note>
+  This is separate from — and stronger than — attribute-based scoping. A
+  per-user Gmail connection can't leak another visitor's inbox even by mistake;
+  there's no shared token to misconfigure.
+</Note>
+
+### Enabling it
+
+In the panel, open **Widget → End-user connections**, pick an app from the
+catalog, and enable it. This creates a **template**: no account is connected yet
+— it just makes the app available for visitors to connect their own. The
+template is automatically added to the widget's source allowlist (**Widget
+access**), since an unlisted source is invisible to the widget by default.
+
+### What visitors see
+
+When at least one app is available, a plug icon appears in the widget's header.
+Tapping it opens a hosted **Connected accounts** page in a new tab, where the
+visitor authorizes their own account through the provider's normal OAuth screen
+— the same flow as connecting any app to their calendar or contacts elsewhere.
+They can revisit that page any time to add another account or disconnect one
+they no longer want linked.
+
+<Note>
+  **No CoreBase account required.** The portal page isn't a login — it opens
+  with a short-lived, one-time code minted by the visitor's existing widget
+  session. Their identity is still the `sub` you signed into the widget JWT;
+  nothing new to authenticate.
+</Note>
+
+### What the assistant can do with it
+
+Once connected, the app behaves like any other source scoped to that visitor:
+the agent can query and act in it (same [governance](/concepts/governance) as
+org-wide connectors — read-only unless you enable writes). **Search
+(retrieval into Unified Context) isn't available for personal connections
+yet** — only the always-on org-level connectors feed search today.
+
+### Customizing the portal URL
+
+On a **self-hosted** deployment, the portal page lives on your own CoreBase
+instance, not `corebasehq.com` — point the option at it:
+
+```ts
+window.CorebaseWidget.init({
+  // …
+  accountsPortalUrl: "https://your-corebase-domain.com/connect/accounts",
+});
+```
 
 ## Voice mode
 
