@@ -97,25 +97,68 @@ user's chats. Nothing to enable — it's on whenever the widget is authenticated
 
 Sign with your **B2B JWT secret** (panel → Widget → Rotate secret). The secret never reaches the browser.
 
-```php
+The official SDKs ship a one-call helper that signs the token with the right
+claim names, always sets an expiry, and never lets a passthrough claim
+overwrite `sub` or `exp`:
+
+<CodeGroup>
+
+```ts Node
+import { createWidgetToken } from "@corebasehq/node";
+
+const token = await createWidgetToken(
+  process.env.COREBASE_WIDGET_SECRET,
+  currentUser.id,                       // sub — shows in audit logs
+  {
+    expiresIn: 1800,                    // seconds; default 30 minutes
+    sourceIds: ["9b1c..."],             // optional — narrow within the widget's sources
+    limits: { daily: 50, perMinute: 5 },// optional — per-end-user message caps
+    claims: { branch: currentUser.branch }, // optional — for {{claim.branch}} headers
+  },
+);
+```
+
+```python Python
+from corebasehq import create_widget_token
+
+token = create_widget_token(
+    os.environ["COREBASE_WIDGET_SECRET"],
+    current_user.id,                    # sub — shows in audit logs
+    expires_in=1800,                    # seconds; default 30 minutes
+    source_ids=["9b1c..."],             # optional — narrow within the widget's sources
+    daily_limit=50,                     # optional — per-end-user message caps
+    per_minute_limit=5,
+    claims={"branch": current_user.branch},  # optional — for {{claim.branch}} headers
+)
+```
+
+```php PHP (manual)
 <?php
 use Firebase\JWT\JWT;
 
 $payload = [
-    'sub'        => $current_user->id,             // required — user identifier
-    'role'       => $current_user->isManager() ? 'admin' : 'member',
-    'user_attrs' => [                              // optional — RBAC attrs
-        'dept'   => $current_user->department,
-        'branch' => $current_user->branch,
-    ],
-    'exp' => time() + 60 * 30,                     // 30 min — refresh via getAuthToken
+    'sub'    => $current_user->id,       // required — user identifier
+    'exp'    => time() + 60 * 30,        // required — 30 min, refresh via getAuthToken
+    'branch' => $current_user->branch,   // optional — for {{claim.branch}} headers
 ];
 
 $jwt = JWT::encode($payload, $secret, 'HS256');
 ?>
 ```
 
-Required claims: **`sub`** (end-user ID, used in audit logs) and **`exp`** — a token signed without an expiry is rejected outright, it doesn't just live forever. The `role: "admin"` claim promotes to admin; otherwise the user is treated as a regular member. `user_attrs` feeds into [access policies](/concepts/rbac). See [Security model](/api-reference/security) for the full TTL/rotation/rate-limit picture.
+</CodeGroup>
+
+No SDK for your stack? Any JWT library works — HS256, signed with the B2B
+secret, like the PHP example above.
+
+Required claims: **`sub`** (end-user ID, used in audit logs) and **`exp`** — a
+token signed without an expiry is rejected outright, it doesn't just live
+forever. Widget sessions are always end-user sessions: a `role` or `is_admin`
+claim is ignored, so a leaked or mis-signed token can never reach admin
+surfaces. Any other top-level claim you sign is available to
+[claim-templated source headers](#scoping-data-per-end-user) as
+`{{claim.<name>}}`. See [Security model](/api-reference/security) for the full
+TTL/rotation/rate-limit picture.
 
 The tenant lookup uses `publicId` from the widget option, not a JWT claim — `publicId` is sent as an `X-Public-Id` header by the widget.
 
@@ -228,12 +271,17 @@ their own records — their orders, their tickets, their account. CoreBase lets 
 enforce that in **your own backend**, using the identity you already signed into
 the JWT.
 
-On a connected **REST / API source**, any request header can be templated with a
-claim from the widget's JWT using `{{claim.<name>}}`. CoreBase fills it in from
-the **verified** token on every request and forwards it to your API:
+On a connected **REST / API source**, turn on **"Scope requests to the
+signed-in end-user"** (when adding or editing the connection). It adds a header
+that CoreBase fills from the **verified** widget token on every request and
+forwards to your API — by default `X-On-Behalf-Of: <the user's sub>`; both the
+header name and the claim are configurable there.
+
+Under the hood it's a claim-templated header — any custom header's value can
+use `{{claim.<name>}}`, so the equivalent manual setup is:
 
 ```jsonc
-// Source → Headers (panel → Sources → your API connection)
+// Custom headers on the API connection
 {
   "X-On-Behalf-Of": "{{claim.sub}}",   // the signed-in end-user
   "X-Service-Key":  "your-service-secret"
