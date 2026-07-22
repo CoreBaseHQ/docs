@@ -17,7 +17,7 @@ Every source starts read-only.
 Each API/SaaS connection has an **Allow writes** toggle (off by default). Turn it on and the agent gains the mutating tools for that source — and only that source. Agent nodes in a flow also have their own **Allow writes** switch, so you decide per step.
 
 <Warning>
-  Treat write enablement as a deliberate act. Today a source is either read-only or fully write-enabled. For autonomous flows, gate writes with an **Approval** step (a person approves before the flow continues), and rely on the per-run **step budget** and the **Stop** control in Run history. Per-write (tool-call level) approval is on the roadmap — until then, keep writes off for anything that runs fully unattended.
+  Treat write enablement as a deliberate act. Today a source is either read-only or fully write-enabled. Per-write (tool-call level) approval is on the roadmap — until then, keep writes off for anything that runs unattended.
 </Warning>
 
 ## Source scoping
@@ -36,7 +36,7 @@ Every tenant runs in its own sealed bubble, enforced at the database with **Post
 
 ## Audit
 
-Every meaningful action — running a query, creating or running an agent flow, connecting or deleting a source, changing access — is written to the audit log with the actor, target, and timing. Available on Team and Enterprise plans.
+Every meaningful action — running a query, connecting or deleting a source, changing access — is written to the audit log with the actor, target, and timing. Available on Team and Enterprise plans.
 
 ## Secrets
 

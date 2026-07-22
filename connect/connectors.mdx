@@ -53,17 +53,17 @@ Connected apps also feed **retrieval**. Turn it on per connection and the app's 
 
 Connectors inherit the same controls as any source — read-only by default, source-scoped, per-tenant isolated, and audited. The generic `request` tool exposes only `GET` until you enable writes, and mutating operations are never handed to an agent on a read-only connection. See [Governance](/concepts/governance) for the full model.
 
-## Trigger on events
+## Automate on app events
 
-Connected apps can also **wake an agent**. A new Jira issue, a new Gmail message, a Stripe payment — these surface in the [trigger event picker](/agents/triggers) and can fire a flow.
+Want something to happen when a Jira issue lands or a Stripe payment comes in? Let your workflow tool own the trigger — n8n, Zapier, and Make all listen to those apps natively — and have the workflow call the [OpenAI-compatible chat endpoint](/api-reference/endpoints/chat) with `stream: false`. One HTTP step returns the full governed answer as JSON, ready to route to Slack, email, or your own systems.
 
 ## Next
 
 <CardGroup cols={2}>
-  <Card title="Build an agent" icon="robot" href="/agents/overview">
-    Give an agent a connector and a goal.
+  <Card title="Ask across your apps" icon="robot" href="/quickstart">
+    Put your connected sources to work in chat, the API, or the widget.
   </Card>
-  <Card title="Trigger on events" icon="bolt" href="/agents/triggers">
-    Wake a flow when an app fires an event.
+  <Card title="Call it from a workflow" icon="bolt" href="/api-reference/endpoints/chat">
+    One `stream: false` HTTP call from n8n, Zapier, or cron.
   </Card>
 </CardGroup>

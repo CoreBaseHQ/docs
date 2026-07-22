@@ -52,17 +52,16 @@ Treat `cb_live_` tokens like database passwords:
 
 ```jsonc
 {
-  "mcp_query": true,        // POST /api/v1/chat/completions, GET /api/v1/agents, GET /api/v1/projects
+  "mcp_query": true,        // POST /api/v1/chat/completions, GET /api/v1/projects, GET /api/v1/usage
   "mcp_admin": false,       // reserved
   "sources_read": true,     // GET /api/v1/sources
   "sources_write": false,   // PATCH /api/v1/sources/* (future)
-  "agents_run": false       // POST /api/v1/agents/{id}/run, GET /api/v1/runs/{id},
-                            // POST /api/v1/runs/{id}/approve | /reject
+  "agents_run": false       // reserved
 }
 ```
 
-Most tokens only need `mcp_query`. Grant `agents_run` only to tokens that should
-trigger automations. Toggle the rest off to enforce least privilege.
+Most tokens only need `mcp_query`. Toggle the rest off to enforce least
+privilege.
 
 ## Rate limits
 

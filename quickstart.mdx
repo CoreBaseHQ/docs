@@ -1,15 +1,15 @@
 ---
 title: "Quickstart"
-description: "Connect a source and ship your first agent in a few minutes."
+description: "Connect a source, ask your data, and ship the assistant in a few minutes."
 ---
 
-The fastest path: sign in, add a source, build an agent. The on-prem CoreMCP path (for databases without an API, or ones behind a firewall) follows.
+The fastest path: sign in, add a source, ask — then ship it through the API or the embeddable widget. The on-prem CoreMCP path (for databases without an API, or ones behind a firewall) follows.
 
-## Build an agent in the cloud
+## Start in the cloud
 
 <Steps>
   <Step title="Sign in and add an LLM key">
-    Create an org at [corebasehq.com](https://corebasehq.com). CoreBase is **bring-your-own-key** — in **Settings → LLM keys**, paste an Anthropic, OpenAI, Gemini, Groq, Mistral, Azure, OpenRouter, or Ollama key. Agents won't run without one. See [LLM keys](/platform/llm-keys).
+    Create an org at [corebasehq.com](https://corebasehq.com). CoreBase is **bring-your-own-key** — in **Settings → LLM keys**, paste an Anthropic, OpenAI, Gemini, Groq, Mistral, Azure, OpenRouter, or Ollama key. Nothing runs without one. See [LLM keys](/platform/llm-keys).
   </Step>
   <Step title="Connect a source">
     In **Sources**, add what your agent will work on:
@@ -20,15 +20,18 @@ The fastest path: sign in, add a source, build an agent. The on-prem CoreMCP pat
 
     Everything connects **read-only by default**. See [Connect your data](/connect/sources).
   </Step>
-  <Step title="Ask, or build a flow">
+  <Step title="Ask your data">
     Open **Chat** and ask a question to confirm the source works:
 
     > How many customers signed up last month and what's the average order value?
 
-    Then go to **Agents** and build a flow: drop a **trigger**, an **agent** step with an instruction and the source you just added, connect them, and hit **Run**. See [Agent platform](/agents/overview).
+    The assistant explores the schema, writes and runs the queries itself — read-only, scoped to the sources you picked.
   </Step>
-  <Step title="Make it proactive">
-    On the trigger node, switch from **Manual** to **On a schedule** (e.g. daily at 09:00) or **When an event happens** (e.g. new Slack message). Now the agent runs itself. See [Triggers](/agents/triggers).
+  <Step title="Ship it">
+    Two ways to put it in front of your users:
+
+    - **API** — create a token under **API Tokens** and call the OpenAI-compatible [chat endpoint](/api-reference/endpoints/chat) from your own app (or from n8n/Zapier with `stream: false`).
+    - **Widget** — embed the assistant in your product with a [server-signed JWT](/platform/widget); each end-user gets their own isolated, rate-limited session.
   </Step>
 </Steps>
 
@@ -70,8 +73,8 @@ For SQL Server, Firebird, or any database behind a firewall, run the open-source
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Agent platform" icon="robot" href="/agents/overview">
-    Triggers, multi-step flows, run history.
+  <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
+    Ship the assistant inside your own product.
   </Card>
   <Card title="Governance" icon="shield-check" href="/concepts/governance">
     Read-only defaults, write opt-in, source scoping.

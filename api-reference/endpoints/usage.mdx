@@ -1,0 +1,13 @@
+---
+title: "Get widget usage"
+openapi: "api-reference/openapi.json GET /api/v1/usage"
+---
+
+Per-end-user usage for your embedded widget over a time window — messages,
+distinct chats, last activity, and live quota counters for the limits you sign
+into each visitor's widget JWT. Build partner dashboards or your own billing on
+top of it.
+
+The `external_id` of each row is the `sub` you signed into that visitor's
+widget token — see [the widget guide](/platform/widget) for how sessions are
+issued.

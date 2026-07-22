@@ -1,0 +1,918 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CoreBase Developer API",
+    "summary": "Build on CoreBase with a cb_live_ token.",
+    "description": "Call CoreBase from your own apps with a `cb_live_` API token. The chat endpoint is OpenAI-compatible, so any OpenAI client works by pointing its base URL at this API. Create a token in the panel under API Tokens.\n\nAuthenticate every request with `Authorization: Bearer cb_live_...`. Responses are JSON, except the chat endpoint, which streams Server-Sent Events.",
+    "version": "0.0.1",
+    "contact": {
+      "name": "CoreBase",
+      "url": "https://corebasehq.com"
+    }
+  },
+  "paths": {
+    "/api/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Create a chat completion",
+        "description": "Runs an OpenAI-compatible chat completion over your connected data.\n\nSend a `messages` array; the agent may query your sources server-side. With\n`stream: true` (default) the answer streams back as Server-Sent Events\n(standard `chat.completion.chunk` objects, terminated by `data: [DONE]`);\nwith `stream: false` the full answer is returned as a single\n`chat.completion` object — use that from tools that can't consume SSE\n(n8n, Zapier, plain HTTP calls). The `model` field is accepted for OpenAI\ncompatibility but ignored — the model used is your organization's default\nLLM key. Scope a request to specific sources with `source_ids`. Requires\nthe `mcp_query` permission.",
+        "operationId": "createChatCompletion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeveloperChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A Server-Sent Event stream of OpenAI `chat.completion.chunk` objects, terminated by `data: [DONE]`.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested project does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No LLM provider key is configured for the organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/plan": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Get subscription plan",
+        "description": "Returns the subscription plan and status of the organization the token\nbelongs to.",
+        "operationId": "getPlan",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/usage": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Get per-end-user widget usage",
+        "description": "Returns live usage for your embedded widget, one row per end-user, keyed by\nthe `sub` you sign into each widget JWT (`external_id`). You set the per-user\nlimits in the JWT, so only the live `used` counts are returned; compute\nremaining as `your_limit - used`. Join `external_id` against your own user\ntable to attach names or emails.",
+        "operationId": "getUsage",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of days to include in the usage window.",
+              "default": 30,
+              "title": "Days"
+            },
+            "description": "Number of days to include in the usage window."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of end-users to return.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of end-users to return."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "List projects",
+        "description": "Lists the organization's projects (workspaces). Every other endpoint that\naccepts a `project_id` takes ids from here; when you omit it, the default\nproject is used. Requires the `mcp_query` permission.",
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectOut"
+                  },
+                  "type": "array",
+                  "title": "Response Listprojects"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sources": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "List data sources",
+        "description": "Lists the data sources the agent can reach in a project (the default\nproject unless `project_id` is given). Use the returned `id` values as\n`source_ids` in a chat completion to scope a request to a subset. Requires\nthe `sources_read` permission.",
+        "operationId": "listSources",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List sources in this project. Omit for the default project.",
+              "title": "Project Id"
+            },
+            "description": "List sources in this project. Omit for the default project."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Maximum sources per page.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum sources per page."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous page's `next_cursor`.",
+              "title": "Cursor"
+            },
+            "description": "Opaque cursor from a previous page's `next_cursor`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceListOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The cursor was invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested project does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "Error message, or an object with a stable `error` code and context."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ApiError",
+        "description": "A structured error. `detail` is a human-readable message, or an object\ncarrying a stable `error` code plus context."
+      },
+      "DeveloperChatRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Accepted for OpenAI compatibility but ignored."
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DeveloperMessage"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Messages",
+            "description": "The conversation so far, oldest first."
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "True (default) streams Server-Sent Events; false returns one complete `chat.completion` JSON object — for callers that can't consume SSE (workflow tools like n8n or Zapier, plain HTTP).",
+            "default": true
+          },
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids",
+            "description": "Restrict the request to these data source ids (from the sources endpoint). Omit to use every source in the project."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Run the completion inside this project (workspace). Omit to use the organization's default project. List ids with the projects endpoint."
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "Continue a server-stored conversation instead of resending the history. Take the value from a previous response (the `conversation_id` field / `X-Conversation-Id` header) and send ONLY the new message(s) in `messages` — the server prepends the stored history. Omit for a new conversation (fully stateless, backward compatible). Ids are only valid for the token identity that created them."
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "DeveloperChatRequest",
+        "description": "An OpenAI-compatible chat completion request. `model` is accepted but\nignored — the model used is your organization's default LLM key."
+      },
+      "DeveloperMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system"
+            ],
+            "title": "Role",
+            "description": "Who authored the message."
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Content",
+            "description": "The message text."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "DeveloperMessage",
+        "description": "A single chat message."
+      },
+      "EndUserQuotaUsage": {
+        "properties": {
+          "daily_used": {
+            "type": "integer",
+            "title": "Daily Used",
+            "description": "Messages used in the current day."
+          },
+          "monthly_used": {
+            "type": "integer",
+            "title": "Monthly Used",
+            "description": "Messages used in the current month."
+          },
+          "per_minute_used": {
+            "type": "integer",
+            "title": "Per Minute Used",
+            "description": "Messages used in the current minute."
+          }
+        },
+        "type": "object",
+        "required": [
+          "daily_used",
+          "monthly_used",
+          "per_minute_used"
+        ],
+        "title": "EndUserQuotaUsage",
+        "description": "Live quota consumption for one end-user. You set the limits (signed into\nthe widget JWT), so only `used` counts are returned; remaining is\n`your_limit - used`."
+      },
+      "EndUserUsage": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "title": "External Id",
+            "description": "The `sub` you signed into this end-user's widget JWT."
+          },
+          "messages": {
+            "type": "integer",
+            "title": "Messages",
+            "description": "Messages sent during the window."
+          },
+          "chats": {
+            "type": "integer",
+            "title": "Chats",
+            "description": "Distinct chats opened during the window."
+          },
+          "last_active": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Active",
+            "description": "ISO-8601 timestamp of the last activity, or null."
+          },
+          "quota": {
+            "$ref": "#/components/schemas/EndUserQuotaUsage",
+            "description": "Live quota counters."
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_id",
+          "messages",
+          "chats",
+          "last_active",
+          "quota"
+        ],
+        "title": "EndUserUsage",
+        "description": "Usage for a single widget end-user over the requested window."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PlanOut": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "title": "Plan",
+            "description": "Plan key: free, pro, team, or enterprise."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Subscription status, e.g. active or past_due."
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "status"
+        ],
+        "title": "PlanOut",
+        "description": "The organization's subscription plan and status."
+      },
+      "ProjectOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Project id — pass it as `project_id` elsewhere."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable project name."
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "description": "Whether this is the organization's default project."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "is_default"
+        ],
+        "title": "ProjectOut",
+        "description": "A project (workspace) inside the organization."
+      },
+      "SourceListOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "The sources on this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Pass as `cursor` to fetch the next page; null on the last page."
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "title": "SourceListOut",
+        "description": "A page of data sources."
+      },
+      "SourceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable source id — use it as a `source_ids` entry."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable source name."
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Source type, e.g. database, api, coremcp, or nango."
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id",
+            "description": "The project this source belongs to."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "project_id"
+        ],
+        "title": "SourceOut",
+        "description": "A data source the agent can query."
+      },
+      "UsageOut": {
+        "properties": {
+          "period_days": {
+            "type": "integer",
+            "title": "Period Days",
+            "description": "Length of the usage window, in days."
+          },
+          "quota_enforced": {
+            "type": "boolean",
+            "title": "Quota Enforced",
+            "description": "Whether live quota counting is active for this organization."
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserUsage"
+            },
+            "type": "array",
+            "title": "Users",
+            "description": "One row per end-user seen in the window."
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_days",
+          "quota_enforced",
+          "users"
+        ],
+        "title": "UsageOut",
+        "description": "Per-end-user widget usage for the requested window."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A `cb_live_` API token, created in the panel under API Tokens."
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.corebasehq.com",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "chat",
+      "description": "OpenAI-compatible chat completions over your connected data."
+    },
+    {
+      "name": "sources",
+      "description": "Data sources the agent can query."
+    },
+    {
+      "name": "agents",
+      "description": "Governed agent flows and their runs."
+    },
+    {
+      "name": "account",
+      "description": "Subscription plan and end-user usage for your organization."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

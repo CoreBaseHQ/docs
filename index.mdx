@@ -12,8 +12,8 @@ Connect a cloud database in minutes. When you need it, the same agents reach the
 ## Where to start
 
 <CardGroup cols={2}>
-  <Card title="Build your first agent" icon="robot" href="/agents/overview">
-    The visual builder. Drop a trigger, an agent step, and an action; connect them; run it. Schedule it or fire it on an event.
+  <Card title="Ask your first question" icon="robot" href="/quickstart">
+    Sign in, connect a source, ask. The assistant explores the schema and writes the queries itself — then ship it through the API or the widget.
   </Card>
   <Card title="Connect a data source" icon="database" href="/connect/sources">
     Paste a Postgres DSN, register a CoreMCP agent for a database without an API, wire a REST/GraphQL API, or connect a SaaS app via managed OAuth.
@@ -43,8 +43,9 @@ curl -N -X POST https://api.corebasehq.com/api/v1/chat/completions \
 ```
 
 <CardGroup cols={2}>
-  <Card title="SDKs" icon="package" href="/api-reference/sdks">
-    OpenAI-compatible today — works with the OpenAI SDK in any language. Official typed Node (`@corebasehq/node`) and Python (`corebasehq`) SDKs are rolling out.
+  <Card title="Developer API" icon="terminal" href="/api-reference/introduction">
+    OpenAI-compatible — point the OpenAI SDK in any language at our base URL
+    and it just works. Streaming or single-JSON responses.
   </Card>
   <Card title="Embeddable widget" icon="message-square" href="/platform/widget">
     Drop-in Preact widget for any page. Server-signed JWT auth.
@@ -54,14 +55,14 @@ curl -N -X POST https://api.corebasehq.com/api/v1/chat/completions \
 ## What you can build
 
 <CardGroup cols={2}>
-  <Card title="Autonomous agents" icon="wand-sparkles" href="/agents/overview">
-    Give an agent a goal and the sources it may use. It explores the schema, writes the SQL, follows foreign keys, and answers — grounded in your data, not guesses.
+  <Card title="Agents over your data" icon="wand-sparkles" href="/quickstart">
+    Ask in plain language; the agent explores the schema, writes the SQL, follows foreign keys, and answers — grounded in your data, not guesses.
   </Card>
-  <Card title="Proactive agents" icon="bell" href="/agents/triggers">
-    Run on a schedule (every morning at 9:00) or react to an event (new Jira issue, new Slack message, incoming webhook). No human in the loop required.
+  <Card title="Automations from your stack" icon="bell" href="/api-reference/endpoints/chat">
+    Drive CoreBase from n8n, Zapier, or cron: one OpenAI-compatible HTTP call with `stream: false` returns the full governed answer as JSON.
   </Card>
-  <Card title="Multi-step flows" icon="workflow" href="/agents/flows">
-    Chain agent and action steps into a DAG. Each step receives the output of the steps before it; branches fan out. Durable execution survives restarts.
+  <Card title="An assistant in your product" icon="workflow" href="/platform/widget">
+    Embed the widget with server-signed JWT sessions — per-end-user identity, message limits, and isolation, inside your own UI.
   </Card>
   <Card title="Governed by default" icon="shield-check" href="/concepts/governance">
     Read-only unless you opt a source into writes. Scope each agent to specific sources. Per-tenant Row-Level Security and a full audit log underneath.

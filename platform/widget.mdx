@@ -97,42 +97,46 @@ user's chats. Nothing to enable — it's on whenever the widget is authenticated
 
 Sign with your **B2B JWT secret** (panel → Widget → Rotate secret). The secret never reaches the browser.
 
-The official SDKs ship a one-call helper that signs the token with the right
-claim names, always sets an expiry, and never lets a passthrough claim
-overwrite `sub` or `exp`:
+Any standard JWT library works — sign HS256 with the B2B secret. A few lines
+in every stack:
 
 <CodeGroup>
 
 ```ts Node
-import { createWidgetToken } from "@corebasehq/node";
+import { SignJWT } from "jose";
 
-const token = await createWidgetToken(
-  process.env.COREBASE_WIDGET_SECRET,
-  currentUser.id,                       // sub — shows in audit logs
-  {
-    expiresIn: 1800,                    // seconds; default 30 minutes
-    sourceIds: ["9b1c..."],             // optional — narrow within the widget's sources
-    limits: { daily: 50, perMinute: 5 },// optional — per-end-user message caps
-    claims: { branch: currentUser.branch }, // optional — for {{claim.branch}} headers
-  },
-);
+const token = await new SignJWT({
+  source_ids: ["9b1c..."],             // optional — narrow within the widget's sources
+  daily_message_limit: 50,             // optional — per-end-user message caps
+  per_minute_message_limit: 5,
+  branch: currentUser.branch,          // optional — for {{claim.branch}} headers
+})
+  .setProtectedHeader({ alg: "HS256" })
+  .setSubject(currentUser.id)          // required — shows in audit logs
+  .setIssuedAt()
+  .setExpirationTime("30m")            // required — refresh via getAuthToken
+  .sign(new TextEncoder().encode(process.env.COREBASE_WIDGET_SECRET));
 ```
 
 ```python Python
-from corebasehq import create_widget_token
+import os, time
+import jwt  # PyJWT
 
-token = create_widget_token(
+token = jwt.encode(
+    {
+        "sub": current_user.id,              # required — shows in audit logs
+        "exp": int(time.time()) + 60 * 30,   # required — refresh via getAuthToken
+        "source_ids": ["9b1c..."],           # optional — narrow within the widget's sources
+        "daily_message_limit": 50,           # optional — per-end-user message caps
+        "per_minute_message_limit": 5,
+        "branch": current_user.branch,       # optional — for {{claim.branch}} headers
+    },
     os.environ["COREBASE_WIDGET_SECRET"],
-    current_user.id,                    # sub — shows in audit logs
-    expires_in=1800,                    # seconds; default 30 minutes
-    source_ids=["9b1c..."],             # optional — narrow within the widget's sources
-    daily_limit=50,                     # optional — per-end-user message caps
-    per_minute_limit=5,
-    claims={"branch": current_user.branch},  # optional — for {{claim.branch}} headers
+    algorithm="HS256",
 )
 ```
 
-```php PHP (manual)
+```php PHP
 <?php
 use Firebase\JWT\JWT;
 
@@ -147,9 +151,6 @@ $jwt = JWT::encode($payload, $secret, 'HS256');
 ```
 
 </CodeGroup>
-
-No SDK for your stack? Any JWT library works — HS256, signed with the B2B
-secret, like the PHP example above.
 
 Required claims: **`sub`** (end-user ID, used in audit logs) and **`exp`** — a
 token signed without an expiry is rejected outright, it doesn't just live

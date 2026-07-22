@@ -1,59 +1,12 @@
 ---
-title: "GET /api/v1/sources"
-description: "List the data sources your agents and chat can reach."
+title: "List data sources"
+openapi: "api-reference/openapi.json GET /api/v1/sources"
 ---
 
 Returns the queryable data sources connected to a project — databases,
 REST/GraphQL APIs, SaaS connectors, and on-prem CoreMCP sources. Use the `id`
-values to scope a chat request via `source_ids`.
-
-Requires the `sources_read` permission.
-
-## Request
-
-```http
-GET /api/v1/sources?project_id=p1a2…&limit=100 HTTP/1.1
-Host: api.corebasehq.com
-Authorization: Bearer cb_live_xxx
-```
-
-| Query parameter | Type | Description |
-|---|---|---|
-| `project_id` | `string` (optional) | List sources in this [project](/platform/projects). Omit for the default project. Ids come from `GET /api/v1/projects`. |
-| `limit` | `integer` (optional) | Page size, 1–200. Default 100. |
-| `cursor` | `string` (optional) | Opaque cursor from a previous page's `next_cursor`. |
-
-## Response
-
-```json
-{
-  "data": [
-    { "id": "9b1c…", "name": "erp_prod", "kind": "database", "project_id": "p1a2…" },
-    { "id": "3f7a…", "name": "Stripe", "kind": "api", "project_id": "p1a2…" },
-    { "id": "c2d8…", "name": "Jira", "kind": "nango", "project_id": "p1a2…" }
-  ],
-  "next_cursor": null
-}
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `data[].id` | `string` | Source id — pass in `source_ids` to scope a chat request |
-| `data[].name` | `string` | Human-friendly source name |
-| `data[].kind` | `"database" \| "api" \| "coremcp" \| "nango"` | Connection type |
-| `data[].project_id` | `string` | The project the source belongs to |
-| `next_cursor` | `string \| null` | Pass as `cursor` to fetch the next page; `null` on the last page |
-
-## Discover projects
-
-```http
-GET /api/v1/projects HTTP/1.1
-Host: api.corebasehq.com
-Authorization: Bearer cb_live_xxx
-```
-
-Returns `[{ "id", "name", "is_default" }]` — every endpoint that takes a
-`project_id` uses these ids. Requires the `mcp_query` permission.
+values to scope a chat request via `source_ids`. Project ids come from
+[List projects](/api-reference/endpoints/projects).
 
 ## Scope a chat request
 
@@ -72,12 +25,3 @@ stream = client.chat.completions.create(
     },
 )
 ```
-
-## Errors
-
-| Status | Meaning |
-|---|---|
-| `400` | Invalid `cursor` |
-| `401` | Missing or invalid token |
-| `403` | Token lacks `sources_read` permission |
-| `404` | No project with that `project_id` in your organization |

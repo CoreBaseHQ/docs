@@ -25,15 +25,6 @@
             ]
           },
           {
-            "group": "Agent platform",
-            "pages": [
-              "agents/overview",
-              "agents/builder",
-              "agents/triggers",
-              "agents/flows"
-            ]
-          },
-          {
             "group": "Connect your data",
             "pages": [
               "connect/sources",
@@ -100,7 +91,6 @@
             "pages": [
               "api-reference/introduction",
               "api-reference/authentication",
-              "api-reference/sdks",
               "api-reference/security"
             ]
           },
@@ -108,9 +98,10 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/endpoints/chat",
-              "api-reference/endpoints/sources",
-              "api-reference/endpoints/agents",
-              "api-reference/endpoints/plan"
+              "api-reference/endpoints/plan",
+              "api-reference/endpoints/usage",
+              "api-reference/endpoints/projects",
+              "api-reference/endpoints/sources"
             ]
           },
           {
@@ -150,5 +141,51 @@
       "github": "https://github.com/corebasehq",
       "linkedin": "https://linkedin.com/company/corebasehq"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/api-reference/endpoints/agents",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/api-reference/sdks",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/agents/overview",
+      "destination": "/"
+    },
+    {
+      "source": "/agents/builder",
+      "destination": "/"
+    },
+    {
+      "source": "/agents/triggers",
+      "destination": "/"
+    },
+    {
+      "source": "/agents/flows",
+      "destination": "/"
+    },
+    {
+      "source": "/api-reference/endpoints/list-agents",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/api-reference/endpoints/run-agent",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/api-reference/endpoints/get-run",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/api-reference/endpoints/approve-run",
+      "destination": "/api-reference/introduction"
+    },
+    {
+      "source": "/api-reference/endpoints/reject-run",
+      "destination": "/api-reference/introduction"
+    }
+  ]
 }

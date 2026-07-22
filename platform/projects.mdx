@@ -17,7 +17,6 @@ When a project is active, you only see and use that project's resources:
 
 - **Data sources** — databases, REST/GraphQL APIs, SaaS connectors, and on-prem
   CoreMCP sources
-- **Agents & flows** — and their run history
 - **Chats** — including conversation history
 - **Unified Context** — schema annotations, the business glossary, and the
   knowledge an agent has ingested
@@ -69,7 +68,7 @@ agents, and chats first. The Default project can't be deleted.
 The [Developer API](/api-reference/introduction) operates in your organization's
 **Default** project unless you say otherwise: list your workspaces with
 `GET /api/v1/projects`, then pass a **`project_id`** — as a query parameter on
-the sources/agents/runs endpoints, or in the chat completion body — to target
+the sources endpoint, or in the chat completion body — to target
 any project. Narrow further within a project with `source_ids` (see
 [`GET /api/v1/sources`](/api-reference/endpoints/sources)).
 

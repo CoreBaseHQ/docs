@@ -1,37 +1,9 @@
 ---
-title: "GET /api/v1/plan"
-description: "Get the subscription plan attached to your token's organization."
+title: "Get subscription plan"
+openapi: "api-reference/openapi.json GET /api/v1/plan"
 ---
 
 Returns the current subscription tier and status for the organization the calling `cb_live_` token belongs to. Useful for gating features in your UI.
-
-## Request
-
-```http
-GET /api/v1/plan HTTP/1.1
-Host: api.corebasehq.com
-Authorization: Bearer cb_live_xxx
-```
-
-No body, no query parameters.
-
-## Response
-
-```json
-{
-  "plan": "pro",
-  "status": "active"
-}
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `plan` | `"free" \| "pro" \| "team" \| "enterprise"` | Current subscription tier |
-| `status` | `string` | Stripe subscription status: `active`, `trialing`, `past_due`, `unpaid`, `canceled`, `incomplete` |
-
-## Errors
-
-Standard authentication errors apply — see [Authentication → Errors](/api-reference/authentication#errors).
 
 ## Examples
 
@@ -63,4 +35,4 @@ def is_active(token: str) -> bool:
 
 ## Caching
 
-Plan changes via Stripe webhook on subscription create/update/delete events. Safe to cache for ~60 seconds.
+Plan changes propagate on subscription create/update/delete events. Safe to cache for ~60 seconds.

@@ -1,48 +1,22 @@
 ---
-title: "POST /api/v1/chat/completions"
-description: "OpenAI-compatible streaming chat completions."
+title: "Create a chat completion"
+openapi: "api-reference/openapi.json POST /api/v1/chat/completions"
 ---
 
-The chat endpoint is OpenAI-compatible — point any OpenAI SDK at `https://api.corebasehq.com/api/v1` and it just works. Responses stream as `text/event-stream` using the standard `chat.completion.chunk` payload, terminated by `data: [DONE]`.
-
-The model has access to your tenant's data sources, Unified Context, and audit policies — no extra setup per call.
+The endpoint is OpenAI-compatible — point any OpenAI SDK at `https://api.corebasehq.com/api/v1` and it just works. By default responses stream as `text/event-stream` using the standard `chat.completion.chunk` payload, terminated by `data: [DONE]`; set `stream: false` to get one complete `chat.completion` JSON object instead (for workflow tools like n8n or Zapier, and plain HTTP calls).
 
 <Note>
   `POST /api/v1/chat/completions` is the canonical path. The older `POST /api/v1/chat` is kept as an alias for backward compatibility and behaves identically.
 </Note>
 
-## Request
-
-```http
-POST /api/v1/chat/completions HTTP/1.1
-Host: api.corebasehq.com
-Authorization: Bearer cb_live_xxx
-Content-Type: application/json
-
-{
-  "model": "corebase",
-  "messages": [
-    { "role": "user", "content": "How many active customers last month?" }
-  ],
-  "stream": true
-}
-```
-
-### Body
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `messages` | `Array<{role, content}>` | yes | Full conversation history. 1–200 items. |
-| `messages[].role` | `"user" \| "assistant" \| "system"` | yes | OpenAI-style role |
-| `messages[].content` | `string` (1–8000 chars) | yes | Message text |
-| `model` | `string` | no | Accepted but ignored — the actual model is the default LLM provider configured in your panel. |
-| `stream` | `boolean` | no | Must be `true`. Non-streaming responses are not supported. Defaults to `true`. |
-
 <Note>
-  The endpoint is **stateless** — there's no server-side `chat_id`. Pass the full history on every call.
+  The endpoint is **stateless by default** — pass the full history on every
+  call, exactly like OpenAI. To skip resending history, take the
+  `conversation_id` from a previous response and send only the new message —
+  see [Multi-turn](#multi-turn).
 </Note>
 
-## Response
+## Streaming response
 
 `Content-Type: text/event-stream`. Each frame is a standard OpenAI `chat.completion.chunk`:
 
@@ -51,14 +25,37 @@ data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1716284
 
 data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1716284400,"model":"anthropic/claude-3-5-sonnet-20241022","choices":[{"index":0,"delta":{"content":"Top "},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1716284400,"model":"anthropic/claude-3-5-sonnet-20241022","choices":[{"index":0,"delta":{"content":"customers"},"finish_reason":null}]}
-
 ...
 
 data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1716284400,"model":"anthropic/claude-3-5-sonnet-20241022","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
 
 data: [DONE]
 ```
+
+Every response also carries an `X-Conversation-Id` header — keep it to continue the conversation later without resending history.
+
+## Non-streaming (`stream: false`)
+
+One complete `chat.completion` object, `Content-Type: application/json`:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1716284400,
+  "model": "corebase",
+  "conversation_id": "abc123",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "Your top customers are…" },
+      "finish_reason": "stop"
+    }
+  ]
+}
+```
+
+The agent still queries your sources server-side — the request simply blocks until the full answer is ready, so expect response times of several seconds for tool-heavy questions. `conversation_id` is a CoreBase extension; OpenAI clients ignore it.
 
 ## Using the OpenAI SDK
 
@@ -129,31 +126,23 @@ When the model invokes one of your connected data sources, the call streams as a
 
 Tool execution happens server-side inside CoreBase — you don't need to handle the call. The next text deltas after the tool call carry the model's interpretation of the result.
 
-## Curl example
-
-```bash
-curl -N -X POST https://api.corebasehq.com/api/v1/chat/completions \
-  -H "Authorization: Bearer cb_live_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "corebase",
-    "messages": [{"role": "user", "content": "Top 3 customers by revenue this quarter?"}],
-    "stream": true
-  }'
-```
-
 ## Errors
 
 | Status | Meaning |
 |---|---|
-| `400` | Body schema invalid, or `stream: false` requested |
+| `400` | Body schema invalid |
 | `401` | Missing or invalid token — see [Authentication](/api-reference/authentication#errors) |
 | `403` | Token lacks `mcp_query` permission |
+| `404` | Unknown `project_id`, or a `conversation_id` that doesn't belong to this token |
 | `409` | No LLM provider key configured for the organization — set one in [Settings → LLM keys](/platform/llm-keys) |
 | `429` | Rate limit hit. Honor `Retry-After`. |
 | `503` | Transient backend issue — retry with exponential backoff |
 
 ## Multi-turn
+
+Two ways to continue a conversation — pick one per conversation, don't mix them.
+
+### Resend the history (OpenAI-style)
 
 Append assistant replies to the `messages` array on subsequent calls. The model uses the full conversation as context.
 
@@ -168,3 +157,22 @@ Append assistant replies to the `messages` array on subsequent calls. The model 
   "stream": true
 }
 ```
+
+### Continue by `conversation_id`
+
+Every response returns a `conversation_id` (as a body field on non-streaming responses, and as the `X-Conversation-Id` header on both). Pass it back with **only the new message** — the server keeps the history, so requests stay small and prompt size doesn't grow with every turn:
+
+```jsonc
+// Turn 1 — a new conversation
+{ "messages": [{ "role": "user", "content": "Top customers this quarter?" }], "stream": false }
+// → { ..., "conversation_id": "abc123" }
+
+// Turn 2 — just the new message
+{
+  "conversation_id": "abc123",
+  "messages": [{ "role": "user", "content": "And compared to last quarter?" }],
+  "stream": false
+}
+```
+
+A conversation belongs to the API token that started it — another token (or another organization) gets a `404`. A continued conversation always stays in the project it started in; `project_id` is ignored on continuation.
