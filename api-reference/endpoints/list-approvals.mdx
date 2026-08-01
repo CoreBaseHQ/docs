@@ -1,0 +1,22 @@
+---
+title: "List pending approvals"
+openapi: "api-reference/openapi.json GET /api/v1/approvals"
+---
+
+Returns actions that a guardrail rule stopped and handed to a person, oldest
+first. Nothing in this list has run.
+
+Approvals raised through the API have no screen of their own — that is
+deliberate. The people who decide ("is this refund fine?") work in your product,
+not in the CoreBase panel, so you render these where they already are. Poll this
+endpoint after a completion comes back saying it is waiting for approval.
+
+`arguments` is exactly what will run if you approve. Show it to whoever decides:
+approving binds the decision to these values, not to whatever the assistant
+would generate on a later turn.
+
+Requests stop appearing here 24 hours after they were raised — after that they
+can no longer be decided, and the assistant has to ask again.
+
+See [Guardrails](/platform/guardrails) for how a rule decides that an action
+needs approval in the first place.

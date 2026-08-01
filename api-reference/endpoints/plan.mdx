@@ -5,9 +5,11 @@ openapi: "api-reference/openapi.json GET /api/v1/plan"
 
 Returns the current subscription tier and status for the organization the calling `cb_live_` token belongs to. Useful for gating features in your UI.
 
+The `plan` field returns the plan key: `free`, `pro` (the Growth plan), `team`, or `enterprise`.
+
 ## Examples
 
-### Gate a Pro-only feature
+### Gate a paid-only feature
 
 ```js
 const res = await fetch("https://api.corebasehq.com/api/v1/plan", {

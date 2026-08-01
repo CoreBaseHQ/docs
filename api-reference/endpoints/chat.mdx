@@ -16,6 +16,31 @@ The endpoint is OpenAI-compatible — point any OpenAI SDK at `https://api.coreb
   see [Multi-turn](#multi-turn).
 </Note>
 
+
+## Acting on behalf of your users
+
+If your product has users, send `end_user` with each completion — a stable id of
+whoever the request is for:
+
+```json
+{
+  "messages": [{ "role": "user", "content": "where is my order?" }],
+  "end_user": "customer_8121",
+  "stream": false
+}
+```
+
+That identity is what makes per-user scoping work. Sources configured with an
+identity header, a pinned parameter, or row-level database scope resolve to this
+value, so each of your users only ever reaches their own rows — enforced by your
+own API or database rules, not by prompt instructions. Usage, memory and the
+audit trail are attributed to it too.
+
+Omit it and those sources are simply **not available** for the request, rather
+than running unscoped. A request with no `end_user` is for a source that isn't
+about a particular person.
+
+
 ## Streaming response
 
 `Content-Type: text/event-stream`. Each frame is a standard OpenAI `chat.completion.chunk`:

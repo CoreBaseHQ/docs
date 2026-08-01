@@ -339,6 +339,203 @@
         ]
       }
     },
+    "/api/v1/approvals": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List pending approvals",
+        "description": "Lists actions waiting on a human decision, oldest first.\n\nApprovals raised through this API have no screen of their own — render them\nin your product, where the people who decide already work. Poll this\nendpoint after a completion comes back saying it is waiting for approval.\nRequests older than 24 hours are no longer decidable and stop appearing\nhere. Requires the `mcp_query` permission.",
+        "operationId": "listApprovals",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List approvals in this project. Omit for the default project.",
+              "title": "Project Id"
+            },
+            "description": "List approvals in this project. Omit for the default project."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApprovalOut"
+                  },
+                  "title": "Response Listapprovals"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Approve or decline an action",
+        "description": "Records a decision on a held action.\n\nThis does not run anything by itself: the held call executes on the\nconversation's next completion, which is also where the assistant reports\nwhat happened. Send the conversation another request afterwards — with no\nnew user message if you have nothing to add. Requires the `mcp_query`\npermission.",
+        "operationId": "decideApproval",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks the permission this endpoint requires.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Back off and retry after the interval in the `Retry-After` response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No pending approval with that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The approval was already decided or has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sources": {
       "get": {
         "tags": [
@@ -505,6 +702,94 @@
         "title": "ApiError",
         "description": "A structured error. `detail` is a human-readable message, or an object\ncarrying a stable `error` code plus context."
       },
+      "ApprovalDecision": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "description": "`approve` runs the held call; `reject` refuses it for good."
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "ApprovalDecision",
+        "description": "Approve or decline a held action."
+      },
+      "ApprovalOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Approval id — pass it to the decide endpoint."
+          },
+          "chat_id": {
+            "type": "string",
+            "title": "Chat Id",
+            "description": "The conversation the action belongs to."
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool",
+            "description": "The action the assistant tried to take."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Data source the action targets."
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule",
+            "description": "Name of the rule that held it."
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments",
+            "description": "Exactly what will run if you approve. Show this to whoever decides."
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At",
+            "description": "When the action was held (ISO 8601, UTC)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "chat_id",
+          "tool"
+        ],
+        "title": "ApprovalOut",
+        "description": "An action a guardrail rule stopped, waiting for a person to decide.\n\nNothing has run. Approving replays exactly this call — the decision binds to\nthe arguments shown here, not to whatever the assistant would generate on a\nlater turn — and the conversation reports the outcome on its next request."
+      },
       "DeveloperChatRequest": {
         "properties": {
           "model": {
@@ -561,6 +846,19 @@
             ],
             "title": "Project Id",
             "description": "Run the completion inside this project (workspace). Omit to use the organization's default project. List ids with the projects endpoint."
+          },
+          "end_user": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End User",
+            "description": "Run this completion on behalf of one of your users. Sources scoped to an end user (identity headers, pinned parameters, row-level database scope) resolve to this value, and usage, memory and the audit trail are attributed to it. Omit for a request that isn't about a particular person — scoped sources are then unavailable rather than unscoped."
           },
           "conversation_id": {
             "anyOf": [

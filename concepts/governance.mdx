@@ -9,20 +9,116 @@ Autonomous agents are only safe if they're governed. CoreBase puts the guardrail
 
 Every source starts read-only.
 
-- **Databases** are read-only at the session level — the connection pool runs with `default_transaction_read_only = on` and a statement timeout. Mutating SQL is rejected by the database itself.
+- **Databases** are read-only at the session level — the connection is opened read-only, so mutating SQL is rejected by the database itself, whatever the assistant writes.
 - **REST / GraphQL / SaaS** sources only expose read operations to the agent. Mutating operations (POST/PUT/PATCH/DELETE, GraphQL mutations) are **not produced as tools** unless you opt the connection into writes. The agent never sees a tool it isn't allowed to call — the guard is structural, not a denylist or a prompt.
 
 ### Opting into writes
 
-Each API/SaaS connection has an **Allow writes** toggle (off by default). Turn it on and the agent gains the mutating tools for that source — and only that source. Agent nodes in a flow also have their own **Allow writes** switch, so you decide per step.
+Every source has an **Allow write operations** toggle, off by default.
+
+- **API / SaaS connections** — turning it on gains the agent the mutating operations for that source, and only that source. You can still switch individual endpoints off.
+- **Databases** — turning it on adds a single separate write action. Reads keep running in a read-only transaction even then, so the query tool can never become a way to change data, and schema changes (CREATE/ALTER/DROP/TRUNCATE) are refused outright. The write runs as the user in your connection string, so grant that user only what you're willing to expose.
 
 <Warning>
-  Treat write enablement as a deliberate act. Today a source is either read-only or fully write-enabled. Per-write (tool-call level) approval is on the roadmap — until then, keep writes off for anything that runs unattended.
+  Treat write enablement as a deliberate act. It decides whether a change is *possible*; use [guardrails](/platform/guardrails) to decide when one is *allowed* — for example holding refunds over $100 until a person approves them.
 </Warning>
+
+## Two shapes of database access
+
+A database can be exposed to an assistant in two very different ways, and the
+second is the one to reach for when the data isn't yours to browse:
+
+- **Free-form SQL** — the assistant browses the schema and writes its own
+  queries. Useful for exploration by your own team; wide by nature.
+- **Saved queries** — you write the query once, name its parameters, and it
+  becomes a single named action. The assistant supplies values, never SQL. Turn
+  **Let the assistant write SQL** off and these are the entire surface: it can
+  reach nothing you didn't put there.
+
+```sql
+-- Saved as "get_customer_orders"
+SELECT id, total, status, created_at
+FROM orders
+WHERE customer_id = {{customer_id}}
+ORDER BY created_at DESC
+```
+
+Values are bound as parameters, so nothing the assistant produces is ever spliced
+into the statement. Guardrail rules read better this way too — a rule on
+`refund_order` says what it means, where a rule on raw SQL cannot.
+
+<Tip>
+  You can get most of this with no configuration at all: create views for what
+  you're willing to expose and grant the connection's role `SELECT` on just
+  those. Everything else stays invisible — the assistant can't list, search or
+  query a table it has no privilege on.
+</Tip>
+
+## Scoping data to the end user
+
+When an assistant serves your customers — in the widget, or through your own
+product via the API — each of them should only ever see their own rows. CoreBase
+carries the caller's verified identity to the source; **your** system decides
+what that identity may see.
+
+- **APIs** — put `{{claim.sub}}` (or any claim you sign) in a header on the
+  connection. Your endpoint receives it and filters, so your access rules stay in
+  your backend. You can also **pin a parameter**: the assistant never sees it in
+  the tool's schema and the value is filled in from the verified identity over
+  anything the assistant sends — so no prompt can move a request to another
+  person's data.
+
+  Two things belong on your side for this to hold: read the identity **only**
+  from that header (an endpoint that also trusts a `customer_id` parameter can be
+  talked into the wrong answer), and authenticate CoreBase itself with an API key
+  or mTLS — otherwise anyone who can reach the endpoint can claim to be anyone.
+- **Databases** — turn on **Scope rows to the end user** and pick a setting name.
+  Every statement then runs in a transaction that starts by applying the caller's
+  identity to that setting, so your own row-level security policies can read it:
+
+  ```sql
+  CREATE POLICY tenant_isolation ON orders
+    USING (customer_ref = current_setting('app.end_user', true));
+  ```
+
+The identity comes from a widget JWT your backend signs, or from `end_user` on a
+[Developer API](/api-reference/endpoints/chat) call. Both are **fail-closed**: a
+source scoped this way simply doesn't exist for a request that carries no
+identity — a panel chat or an unattended run can't fall
+back to an unscoped view of it. And because the setting is transaction-local, a
+pooled connection never carries one visitor's scope into another's request.
+
+<Note>
+  This is the answer to "do I have to hand over my production database?" — you
+  don't. Give CoreBase a role restricted to what you're willing to expose, keep
+  your filtering rules in your own system, and the blast radius stays the rows
+  one visitor was already allowed to see.
+</Note>
+
+## Choosing what an API exposes
+
+Pointing a connection at an OpenAPI spec gives the assistant every operation in
+it, which is rarely what you want on a system your customers touch. Two switches
+on each connection narrow that:
+
+- **Offer every endpoint in the spec** — off, the assistant sees only the
+  endpoints you enabled and the custom tools you wrote. The same question a
+  database's *Let the assistant write SQL* switch asks: is this surface
+  everything the system can do, or the part you chose?
+- **Allow free-form requests** — off, the assistant can no longer pick its own
+  method and path. Keep it on only for connections without a spec, where it's
+  the only way to act at all.
+
+Fewer, well-named tools also measurably improve how accurately a model uses
+them.
+
+## Approval before an action runs
+
+A guardrail rule can hold an individual action until a person decides on it, with the exact arguments they'll be agreeing to. Nothing runs while it waits, approving replays that exact call, and a decision can be spent only once. See [Guardrails](/platform/guardrails).
 
 ## Source scoping
 
-An agent only ever sees the sources you grant it. In chat you pick sources from the header; in a flow each agent node has a **Sources** list; via the API you pass `source_ids`.
+An agent only ever sees the sources you grant it. In chat you pick sources from the header; a guardrail step narrows them further; via the API you pass `source_ids`.
 
 This is enforced structurally — the agent's toolset is built from only the scoped sources, so it cannot "jump" from one system to another (say, from your POS database to your accounting ERP). The tools for the second source were never created for that request, so there's nothing for a prompt to talk it into.
 

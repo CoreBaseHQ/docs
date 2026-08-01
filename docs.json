@@ -60,6 +60,12 @@
             "pages": [
               "platform/widget"
             ]
+          },
+          {
+            "group": "Controls",
+            "pages": [
+              "platform/guardrails"
+            ]
           }
         ]
       },
@@ -101,7 +107,9 @@
               "api-reference/endpoints/plan",
               "api-reference/endpoints/usage",
               "api-reference/endpoints/projects",
-              "api-reference/endpoints/sources"
+              "api-reference/endpoints/sources",
+              "api-reference/endpoints/list-approvals",
+              "api-reference/endpoints/decide-approval"
             ]
           },
           {

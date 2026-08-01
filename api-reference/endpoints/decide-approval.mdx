@@ -1,0 +1,29 @@
+---
+title: "Approve or decline an action"
+openapi: "api-reference/openapi.json POST /api/v1/approvals/{approval_id}"
+---
+
+Records a decision on an action a guardrail rule is holding.
+
+This endpoint does not run anything by itself. Approving marks the held call as
+allowed **once**; it executes on the conversation's next completion, which is
+also where the assistant explains what happened. So after deciding, send that
+conversation another request — with no new user message if you have nothing to
+add:
+
+```bash
+curl https://api.corebasehq.com/api/v1/chat/completions \
+  -H "Authorization: Bearer $COREBASE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "conversation_id": "conv_...",
+    "messages": [],
+    "stream": false
+  }'
+```
+
+Declining is final: the call never runs, and the assistant is told not to retry
+it or attempt it another way.
+
+A decision can only be made once, and only within 24 hours of the request. A
+second attempt returns `409`.

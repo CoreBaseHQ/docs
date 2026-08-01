@@ -21,7 +21,7 @@ Stripe signs every request with the webhook signing secret. Invalid or replayed 
 
 | Event | Effect |
 |---|---|
-| `customer.subscription.created` | Activates the chosen plan (Pro / Team) on the organization. |
+| `customer.subscription.created` | Activates the chosen plan (Growth / Team) on the organization. |
 | `customer.subscription.updated` | Picks up plan changes and status transitions (`trialing`, `past_due`, etc.). |
 | `customer.subscription.deleted` | Final cancellation. Organization drops back to the Free plan. |
 | `invoice.paid` | Subscription renewal. |

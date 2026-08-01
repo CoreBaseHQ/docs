@@ -231,7 +231,8 @@ single visitor from burning through your LLM budget. Limits are **per user**
 extra claims in the JWT — so you stay in control: change a user's limit by
 signing their next token with new values.
 
-Add any of these claims (all optional — omit one and that period is unlimited):
+Add any of these claims (all optional — omit one and the platform default for
+that period applies, so no visitor is ever unlimited):
 
 ```php
 $payload = [
@@ -255,9 +256,11 @@ window. **Voice turns count too** — a spoken question is the same governed tur
 as a typed one.
 
 <Note>
-  On **CoreBase Cloud** these limits are enforced out of the box. On a
-  **self-hosted** deployment, per-user limit enforcement requires Redis to be
-  configured — without it, the limits are accepted but not enforced.
+  On **CoreBase Cloud** these limits are enforced out of the box, and a sensible
+  default applies to any period you don't set — a single visitor can't run up
+  your bill just because you left a claim out. On a **self-hosted** deployment,
+  per-user limit enforcement requires Redis to be configured — without it, the
+  limits are accepted but not enforced.
 </Note>
 
 To build a per-user usage dashboard, call **`GET /api/v1/usage`** with a
@@ -378,6 +381,21 @@ window.CorebaseWidget.init({
 });
 ```
 
+## Changes and approvals
+
+The widget assistant never changes a visitor's data on its own. When it wants to
+make a change, the visitor gets a plain-language prompt with **Confirm** and
+**Cancel** buttons, and nothing runs until they choose. They never see internal
+names, SQL, or arguments — only what the action does.
+
+If one of your [guardrail](/platform/guardrails) rules holds the action instead
+(say, refunds over $100), the visitor is not asked. It goes to your team, who
+decide under **Widget → Approvals** in the panel. The held action then runs the
+next time the visitor writes, and the assistant tells them the outcome.
+
+Writes are off by default. A widget can only change anything if the source
+allows writes **and** the widget key itself isn't read-only.
+
 ## Voice mode
 
 Visitors can **talk** to the assistant instead of typing. The spoken answers come
@@ -422,10 +440,26 @@ initialize.
 
 ## Security
 
-- **Shadow DOM isolation** — widget styles never leak into the host page and vice versa.
+- **Short-lived JWTs**, rejected once expired and refreshed client-side via
+  `getAuthToken`. CoreBase also refuses a token minted to last longer than 24
+  hours — a credential that sits in a browser is only as safe as its remaining
+  lifetime. Sign for minutes, not days.
+- **Nothing secret ships to the browser.** `publicId` is an identifier, not a
+  key; the signing secret stays on your server. A stolen token is scoped to the
+  one user it was signed for, and expires.
+- **The transcript is the server's.** The widget sends your visitor's new
+  message; the conversation the model sees is rebuilt from what CoreBase stored,
+  so a tampered client can't put words in the assistant's mouth.
 - **DOMPurify sanitization** — markdown rendered from model output is sanitized against XSS before insertion.
 - **TLS 1.2+** for all traffic. Data handling depends on your deployment mode — see [Zero Raw Data Egress](/concepts/zero-raw-data-egress) for what crosses the wire in cloud-direct, cloud-relay, self-hosted, and air-gap.
-- **Short-lived JWTs** rejected by CoreBase once expired. Refresh client-side via `getAuthToken`.
+
+<Note>
+  The widget renders in a shadow DOM. That's **style** isolation — your CSS and
+  the widget's never touch each other — not a security boundary: scripts running
+  on the page can reach into it, as they can with any element. Treat the widget
+  as part of your own page, and keep third-party scripts on pages that host it
+  to ones you trust.
+</Note>
 
 ## Going live
 

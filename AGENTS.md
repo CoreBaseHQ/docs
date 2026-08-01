@@ -19,7 +19,7 @@
 - Use **"agent" / "agent flow" / "step"**, not "workflow automation" generically. A flow is a DAG of trigger → agent/action nodes.
 - **"data-sovereign" / "network-safe"**, never "local-first".
 - CoreMCP = the open-source, on-prem, zero-trust bridge (sovereign tier). Nango-backed SaaS connectors = cloud-relay tier. Keep the two tiers distinct.
-- Be honest about status: approval gates/budgets/kill-switch, notify actions, event-subtype filtering, and SaaS RAG ingestion are **roadmap** — mark them as such, don't imply they ship today.
+- Be honest about status. **Shipped** (write about them plainly): guardrail rules with block / require-approval effects, approvals decided in panel chat, on the Widget page and through the API, visitor confirmation for widget writes, opt-in database writes, saved queries, per-end-user scoping (identity headers, pinned parameters, row-level database scope). **Roadmap** (mark as such): webhook push for approvals, Slack/email notification, per-write approval on autonomous runs.
 
 ## Style preferences
 

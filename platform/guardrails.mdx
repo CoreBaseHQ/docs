@@ -1,0 +1,99 @@
+---
+title: "Guardrails"
+description: "Enforced limits on what an assistant may do — block an action, require a person to approve it, or ask the customer to confirm."
+---
+
+Guardrails are the rules an assistant runs inside. They are evaluated **before**
+an action executes, so a blocked action never happens — it isn't a request the
+assistant can talk itself out of.
+
+You author them in the panel under **Guardrails**. A guardrail lives on a step of
+the conversation and has three parts:
+
+- **Sources** — which of your systems exist at all during that step.
+- **Rules** — which actions may run there, and with what arguments.
+- **Transitions** — where the conversation may go next.
+
+## Rules
+
+A rule matches an action (optionally narrowed by conditions on its arguments)
+and says what happens:
+
+| Effect | What it does |
+| --- | --- |
+| **Block it** | The action never runs. The assistant is told it was refused, and to stop. |
+| **Require approval** | The action is held until a person decides. Nothing runs in the meantime. |
+| **Allow (exception)** | A carve-out for a narrower case. |
+
+Rules combine most-restrictive-first, whatever order you wrote them in: a block
+always wins over an approval, and an approval always wins over an allow. An
+explicit allow never punches a hole through a block.
+
+Conditions read the arguments of the pending action, so you can write the limit
+rather than the action:
+
+```
+Refunds over $100      →  create_refund   when {{args.amount}} > 100   →  Require approval
+Never touch production →  execute_write   on source "prod"             →  Block it
+```
+
+## Approvals
+
+An action held for approval is stored with **exactly the arguments that will
+run**. Approving replays that call — it doesn't ask the assistant to try again,
+which could produce different values. A decision can be used once, and expires
+after 24 hours.
+
+Where a decision is made depends on where the conversation is happening:
+
+<CardGroup cols={3}>
+  <Card title="Panel chat" icon="message">
+    An Approve / Decline card appears under the conversation.
+  </Card>
+  <Card title="Widget" icon="window">
+    Your team decides under **Widget → Approvals**. The visitor never sees the
+    rule or the arguments.
+  </Card>
+  <Card title="API" icon="code">
+    Fetch and decide through the
+    [approvals endpoints](/api-reference/endpoints/list-approvals) and render
+    them in your own product.
+  </Card>
+</CardGroup>
+
+Any member of your organization can decide — these are day-to-day support calls,
+and every decision is recorded in the audit log with who made it.
+
+After a decision, the held action runs on the conversation's **next turn**, and
+the assistant reports what happened. In a widget conversation that means the
+next time the visitor writes.
+
+<Note>
+  A widget visitor can never approve an action a rule held. That decision
+  belongs to your team — the rule exists to protect you from the request, not to
+  confirm it.
+</Note>
+
+## Asking the customer to confirm
+
+Separately from your rules, an assistant in the **widget** never changes a
+visitor's data without asking them first. When it wants to make a change, the
+visitor gets a plain-language prompt with **Confirm** and **Cancel** buttons, and
+nothing runs until they choose.
+
+This is about consent, not policy — so it doesn't replace your rules, and it
+can't soften one. If a rule sends an action to your team for approval, the
+visitor is not asked instead; your team still decides.
+
+The prompt the visitor sees is written from the action alone ("make a change in
+Billing"). Internal names, SQL, and arguments never reach the widget.
+
+## What counts as a change
+
+Anything that modifies the other system: a write to a database, a GraphQL
+mutation, or a `POST` / `PUT` / `PATCH` / `DELETE` to an API. Reads never trigger
+approval or confirmation.
+
+Remember that writes are off by default everywhere — see
+[Governance](/concepts/governance). A guardrail decides *when* a write is
+allowed to run; the source's own setting decides whether it can happen at all.
